@@ -1,0 +1,33 @@
+﻿<Window x:Class="Midi_Analyzer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Midi_Analyzer"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <TextBlock HorizontalAlignment="Center" Margin="0,100,0,0" TextWrapping="Wrap" Text="Welcome to the Midi converter!" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Center" Margin="0,117,0,0" TextWrapping="Wrap" Text="Please select what file you wish to convert, and a location for the output file." VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="99,227,0,0" TextWrapping="Wrap" Text="Source Files:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="99,287,0,0" TextWrapping="Wrap" Text="Destination Folder:" VerticalAlignment="Top"/>
+        <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                 Name="sourcePath" HorizontalAlignment="Left" Height="23" Margin="230,227,0,0"
+                 TextWrapping="Wrap" VerticalAlignment="Top" Width="308" />
+        <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                 Name="destinationPath" HorizontalAlignment="Left" Height="23" Margin="230,287,0,0"
+                 TextWrapping="Wrap" VerticalAlignment="Top" Width="308"/>
+        <Button Content="Browse" HorizontalAlignment="Left" Margin="592,229,0,0" VerticalAlignment="Top"
+                Width="75" Click="BrowseForFile" RenderTransformOrigin="0.178,-0.5"/>
+        <Button Content="Browse" HorizontalAlignment="Left" Margin="592,290,0,0" VerticalAlignment="Top"
+                Width="75" Click="BrowseForFolder"/>
+        <Button Content="Convert" HorizontalAlignment="Center" Margin="0,359,0,0" VerticalAlignment="Top"
+                Width="75" Click="ConvertFile"/>
+        <TextBlock HorizontalAlignment="Left" Margin="99,179,0,0" TextWrapping="Wrap" Text="Source File Type:" VerticalAlignment="Top"/>
+        <RadioButton Name="midiButton" Content="MIDI" GroupName="Group1" HorizontalAlignment="Left" 
+                     Margin="242,179,0,0" VerticalAlignment="Top" IsChecked="True" Checked="buttonCheckChange"/>
+        <RadioButton Name="csvButton" Content="CSV" GroupName="Group1" HorizontalAlignment="Left" 
+                     Margin="359,179,0,0" VerticalAlignment="Top" Checked="buttonCheckChange"/>
+
+    </Grid>
+</Window>
