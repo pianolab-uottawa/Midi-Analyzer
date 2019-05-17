@@ -1,16 +1,16 @@
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csprojAssemblyReference.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\View\MainWindow.g.cs
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\View\App.g.cs
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer_MarkupCompile.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer_MarkupCompile.lref
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.exe.config
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.exe
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.pdb
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\View\MainWindow.baml
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.g.resources
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi_Analyzer.Properties.Resources.resources
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csproj.GenerateResource.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csproj.CoreCompileInputs.cache
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.exe
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.pdb
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer_Content.g.cs
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csprojAssemblyReference.cache
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.dll.config
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\View\App.baml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.dll

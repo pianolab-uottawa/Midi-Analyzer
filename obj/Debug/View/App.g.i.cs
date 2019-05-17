@@ -38,7 +38,9 @@ namespace Midi_Analyzer {
     /// <summary>
     /// App
     /// </summary>
-    public partial class App : System.Windows.Application {
+    public partial class App : System.Windows.Application, System.Windows.Markup.IComponentConnector {
+        
+        private bool _contentLoaded;
         
         /// <summary>
         /// InitializeComponent
@@ -52,18 +54,27 @@ namespace Midi_Analyzer {
             
             #line default
             #line hidden
+            if (_contentLoaded) {
+                return;
+            }
+            _contentLoaded = true;
+            System.Uri resourceLocater = new System.Uri("/Midi Analyzer;component/view/app.xaml", System.UriKind.Relative);
+            
+            #line 1 "..\..\..\View\App.xaml"
+            System.Windows.Application.LoadComponent(this, resourceLocater);
+            
+            #line default
+            #line hidden
         }
         
-        /// <summary>
-        /// Application Entry Point.
-        /// </summary>
-        [System.STAThreadAttribute()]
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
-        public static void Main() {
-            Midi_Analyzer.App app = new Midi_Analyzer.App();
-            app.InitializeComponent();
-            app.Run();
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target) {
+            this._contentLoaded = true;
         }
     }
 }

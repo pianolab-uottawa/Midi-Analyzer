@@ -8,9 +8,9 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Midi Analyzer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("This tool is used to convert and perform analysis on Midi files for research purposes.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("uOttawa Piano Lab")]
 [assembly: AssemblyProduct("Midi Analyzer")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Midi_Analyzer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Midi Analyzer" Height="450" Width="800">
     <Grid>
         <TextBlock HorizontalAlignment="Center" Margin="0,100,0,0" TextWrapping="Wrap" Text="Welcome to the Midi converter!" VerticalAlignment="Top"/>
         <TextBlock HorizontalAlignment="Center" Margin="0,117,0,0" TextWrapping="Wrap" Text="Please select what file you wish to convert, and a location for the output file." VerticalAlignment="Top"/>
