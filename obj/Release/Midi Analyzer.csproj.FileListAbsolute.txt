@@ -14,3 +14,8 @@ C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi 
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.exe
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csprojAssemblyReference.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.exe
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csproj.CopyComplete

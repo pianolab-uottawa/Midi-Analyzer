@@ -1,7 +1,7 @@
 ﻿Midi Analyzer
 
 
-library
+winexe
 C#
 .cs
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\
@@ -9,12 +9,12 @@ Midi_Analyzer
 none
 false
 DEBUG;TRACE
-
-2-575686649
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\View\App.xaml
+1-1711142684
 8-1045408207
-61495081067
-14-1175798665
-View\App.xaml;View\MainWindow.xaml;
+71306010272
+211983568483
+View\MainWindow.xaml;
 
 False
 

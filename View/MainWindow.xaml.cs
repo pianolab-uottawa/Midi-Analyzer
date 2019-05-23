@@ -102,5 +102,16 @@ namespace Midi_Analyzer
                 Console.WriteLine("There was an error with the source file type selection.");
             }
         }
+
+        private void AnalyzeFile(object sender, RoutedEventArgs e)
+        {
+            ConvertFile(sender, e);
+            TextBox sPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
+            string[] sourceFiles = sPath.Text.Replace("\n", "").Split(';');
+            string destinationFolder = destPath.Text;
+            Analyzer analyzer = new Analyzer();
+            analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder);
+        }
     }
 }

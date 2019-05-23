@@ -10,7 +10,14 @@ C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi An
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csproj.CoreCompileInputs.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.pdb
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csprojAssemblyReference.cache
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.dll.config
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.dll
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\View\App.baml
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.exe.config
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\Midi Analyzer.exe
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\CsvHelper.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\System.ValueTuple.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\CsvHelper.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\System.ValueTuple.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer_Content.g.cs
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.csproj.CopyComplete
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Debug\Midi Analyzer.exe
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\EPPlus.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Debug\EPPlus.xml
