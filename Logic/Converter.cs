@@ -18,13 +18,16 @@ namespace Midi_Analyzer.Logic
             try
             {
                 string fileName = "CsvGenerator.bat";
+                string fullCommand = "";
                 using (StreamWriter writer = new StreamWriter(fileName))
                 {
                     foreach (string file in sourceFiles)
                     {
                         string[] fileSplit = file.Split('\\');
                         string sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
-                        writer.WriteLine("Midicsv \"" + file + "\" \"" + dest +"\\"+ sFileName + ".csv\"");
+                        fullCommand = "Midicsv \"" + file + "\" \"" + dest + "\\" + sFileName + ".csv\"";
+                        Console.WriteLine("CONVERTER.CS: COMMAND NAME: " + fullCommand);
+                        writer.WriteLine(fullCommand);
                     }
                     writer.WriteLine("EXIT /B");
                 }
