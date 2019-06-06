@@ -38,7 +38,7 @@
                     <Canvas>
                         <ListBox x:Name="xlsFileList" Height="198" Canvas.Left="89" Canvas.Top="103" Width="603">
                             <ListBox.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Style TargetType="{x:Type ListBoxItem}">
                                     <EventSetter Event="MouseDoubleClick" Handler="OpenFile"/>
                                 </Style>
                             </ListBox.ItemContainerStyle>

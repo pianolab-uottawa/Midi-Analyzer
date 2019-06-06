@@ -122,10 +122,12 @@ namespace Midi_Analyzer
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "errorDetection").Focus();
         }
 
-        private void OpenFile(object sender, RoutedEventArgs e)
+        private void OpenFile(object sender, MouseButtonEventArgs e)
         {
-            ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
-            string file = xlsList.SelectedItem.ToString();
+            Console.WriteLine("SENDER TYPE??: " + sender.ToString());
+            var list = sender as ListBoxItem;
+            //ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
+            string file = list.Content.ToString();
             Process.Start(@"" + file);
         }
     }
