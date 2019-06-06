@@ -6,6 +6,7 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Midi_Analyzer.Logic
 {
@@ -23,21 +24,59 @@ namespace Midi_Analyzer.Logic
             notes = (JObject)JsonConvert.DeserializeObject(st);
         }
 
-        public void AnalyzeCSVFiles(string[] sourceFiles, string dest)
+        public string AnalyzeCSVFiles(string[] sourceFiles, string dest)
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
-            foreach (string file in sourceFiles)
+            string[] xlsPaths = new string[sourceFiles.Length];
+            string file = "";
+            for(int i = 0; i < sourceFiles.Length; i++)
             {
-                string[] fileSplit = file.Split('\\');
-                string sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
-                string csv_path = (dest + "\\" + sFileName + ".csv");
-                string xls_path = CreateXLSFile(csv_path);
-                CreateTimeRows(xls_path);
-                CreateLetterNoteRow(xls_path);
-                CreateIOIRowEPP(xls_path);
-                CreateGraphs(xls_path);
+                //file = sourceFiles[i];
+                //string[] fileSplit = file.Split('\\');
+                //string sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
+                //string csv_path = (dest + "\\" + sFileName + ".csv");
+                //string xls_path = CreateXLSFile(csv_path);
+                //xlsPaths[i] = xls_path;
+                //FileInfo existingFile = new FileInfo(xls_path);
+                //ExcelPackage package = new ExcelPackage(existingFile);
+                //CreateTimeRows(package);
+                //CreateLetterNoteRow(xls_path, package);
+                //CreateIOIRowEPP(xls_path, package);
+                // CreateGraphs(xls_path, package);
+                //HighlightNoteRows(xls_path, package);
+                //package.Save();
             }
+            string[] sourceCSVs = new string[sourceFiles.Length];
+            string[] fileSplit = null;
+            string sFileName = "";
+            for(int i = 0; i< sourceFiles.Length; i++)
+            {
+                file = sourceFiles[i];
+                fileSplit = file.Split('\\');
+                sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
+                sourceCSVs[i] = (dest + "\\" + sFileName + ".csv");
+            }
+            string sourceFile = CreateCombinedXLSFile(sourceCSVs, dest);
+            ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(sourceFile));
+            if (File.Exists(dest + "\\analyzedFile.xlsx"))
+            {
+                File.Delete(dest + "\\analyzedFile.xlsx");
+            }
+            ExcelPackage analysisPackage = new ExcelPackage(new FileInfo(dest+"\\analyzedFile.xlsx"));
+            ExcelWorksheet treatedSheet = null;
+            for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
+            {
+                //sourcePackage = new ExcelPackage(new FileInfo(sourceFiles[j]));
+                analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
+                CreateTimeRows(sourcePackage, analysisPackage);
+                CreateLetterNoteRow(analysisPackage);
+                CreateIOIRowEPP(analysisPackage);
+                HighlightNoteRows(analysisPackage);   
+            }
+            CreateGraphs(analysisPackage);
+            analysisPackage.Save();
+
             stopWatch.Stop();
             // Get the elapsed time as a TimeSpan value.
             TimeSpan ts = stopWatch.Elapsed;
@@ -47,88 +86,108 @@ namespace Midi_Analyzer.Logic
                 ts.Hours, ts.Minutes, ts.Seconds,
                 ts.Milliseconds / 10);
             Console.WriteLine("RunTime " + elapsedTime);
+            return dest + "\\analyzedFile.xlsx";
         }
 
-        public void CreateTimeRows(string xls_path)
+        public void HighlightNoteRows(ExcelPackage package)
+        {
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count]; //get last sheet, for last file. 
+            int i = 2;
+            string header = "";
+            while(header != "end_of_file")
+            {
+                header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
+                if (header == "note_on_c")
+                {
+                    treatedSheet.Cells[i, 11].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    treatedSheet.Cells[i, 11].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Orange);
+                }
+                else if(header == "note_off_c")
+                {
+                    treatedSheet.Cells[i, 11].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    treatedSheet.Cells[i, 11].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Yellow);
+                }
+                i++;
+            }
+        }
+
+        public void CreateTimeRowsFromCsvs(string csvPath, string xlsPath)
+        {
+            FileInfo existingFile = new FileInfo(csvPath);
+            ExcelPackage package = new ExcelPackage(existingFile);
+        }
+
+        public void CreateTimeRows(ExcelPackage sourcePackage, ExcelPackage targetPackage)
         {
             /*
              * Creates all columns pertaining to time (Except IOI). Also creates the header (maybe this should be seperated?).
              * 
              */
-            FileInfo existingFile = new FileInfo(xls_path);
-            using (ExcelPackage package = new ExcelPackage(existingFile))
+            //get the first worksheet in the workbook
+            ExcelWorksheet treatedSheet = targetPackage.Workbook.Worksheets[targetPackage.Workbook.Worksheets.Count]; // Get the last sheet
+            ExcelWorksheet workSheet = sourcePackage.Workbook.Worksheets[treatedSheet.Name];
+
+            treatedSheet.Cells[1, 3].Value = "Timestamp";
+            treatedSheet.Cells[1, 1].Value = "Track Number";
+            treatedSheet.Cells[1, 2].Value = "Midi pulses";
+            treatedSheet.Cells[1, 4].Value = "Header";
+            treatedSheet.Cells[1, 5].Value = "Channel";
+            treatedSheet.Cells[1, 6].Value = "Midi Note";
+            treatedSheet.Cells[1, 7].Value = "Letter Note";
+            treatedSheet.Cells[1, 8].Value = "Velocity";
+            treatedSheet.Cells[1, 9].Value = "IOI (pulses)";
+            treatedSheet.Cells[1, 10].Value = "IOI (Timestamp)";
+            treatedSheet.Cells[1, 11].Value = "Include? (Y/N)";
+            string header = "";
+            division = Double.Parse(workSheet.Cells[1, 6].Text);
+            int workIndex = 2;
+            int treatedIndex = 2;
+            while (header != "end_of_file")
             {
-                //get the first worksheet in the workbook
-                ExcelWorksheet workSheet = package.Workbook.Worksheets[1];
-                ExcelWorksheet treatedSheet = package.Workbook.Worksheets[2];
-                treatedSheet.Cells[1, 3].Value = "Timestamp";
-                treatedSheet.Cells[1, 1].Value = "Track Number";
-                treatedSheet.Cells[1, 2].Value = "Midi pulses";
-                treatedSheet.Cells[1, 4].Value = "Header";
-                treatedSheet.Cells[1, 5].Value = "Channel";
-                treatedSheet.Cells[1, 6].Value = "Midi Note";
-                treatedSheet.Cells[1, 7].Value = "Letter Note";
-                treatedSheet.Cells[1, 8].Value = "Velocity";
-                treatedSheet.Cells[1, 9].Value = "IOI (pulses)";
-                treatedSheet.Cells[1, 10].Value = "IOI (Timestamp)";
-                string header = "";
-                division = Double.Parse(workSheet.Cells[1, 6].Text);
-                int workIndex = 2;
-                int treatedIndex = 2;
-                while (header != "end_of_file")
+                header = workSheet.Cells[workIndex, 3].Text.Trim().ToLower();
+                if(header == "tempo")
                 {
-                    header = workSheet.Cells[workIndex, 3].Text.Trim().ToLower();
-                    if(header == "tempo")
-                    {
-                        tempo = Double.Parse(workSheet.Cells[workIndex, 4].Text);
-                    }
-                    if(header == "note_on_c" || header == "note_off_c" || header == "start_track" ||
-                        header == "end_track" || header == "end_of_file" || header == "control_c")
-                    {
-                        double milli = CalculateMilliseconds(Double.Parse(workSheet.Cells[workIndex, 2].Text));
-                        string timestamp = ConvertMilliToString(milli);
-                        treatedSheet.Cells[treatedIndex, 1].Value = workSheet.Cells[workIndex, 1].Value;
-                        treatedSheet.Cells[treatedIndex, 2].Value = workSheet.Cells[workIndex, 2].Value;
-                        treatedSheet.Cells[treatedIndex, 3].Value = timestamp;
-                        treatedSheet.Cells[treatedIndex, 4].Value = header;
-                        treatedSheet.Cells[treatedIndex, 5].Value = workSheet.Cells[workIndex, 4].Value;//Channels
-                        treatedSheet.Cells[treatedIndex, 6].Value = workSheet.Cells[workIndex, 5].Value;//note
-                        treatedSheet.Cells[treatedIndex, 8].Value = workSheet.Cells[workIndex, 6].Value;//Velocity
-                        treatedIndex++;
-                    }                    
-                    workIndex++;
+                    tempo = Double.Parse(workSheet.Cells[workIndex, 4].Text);
                 }
-                package.Save();
+                if(header == "note_on_c" || header == "note_off_c" || header == "start_track" ||
+                    header == "end_track" || header == "end_of_file" || header == "control_c")
+                {
+                    double milli = CalculateMilliseconds(Double.Parse(workSheet.Cells[workIndex, 2].Text));
+                    string timestamp = ConvertMilliToString(milli);
+                    treatedSheet.Cells[treatedIndex, 1].Value = workSheet.Cells[workIndex, 1].Value;
+                    treatedSheet.Cells[treatedIndex, 2].Value = workSheet.Cells[workIndex, 2].Value;
+                    treatedSheet.Cells[treatedIndex, 3].Value = timestamp;
+                    treatedSheet.Cells[treatedIndex, 4].Value = header;
+                    treatedSheet.Cells[treatedIndex, 5].Value = workSheet.Cells[workIndex, 4].Value;//Channels
+                    treatedSheet.Cells[treatedIndex, 6].Value = workSheet.Cells[workIndex, 5].Value;//note
+                    treatedSheet.Cells[treatedIndex, 8].Value = workSheet.Cells[workIndex, 6].Value;//Velocity
+                    treatedIndex++;
+                }                    
+                workIndex++;
             }
         }
 
-        public void CreateLetterNoteRow(string xls_path)
+        public void CreateLetterNoteRow(ExcelPackage package)
         {
-            FileInfo existingFile = new FileInfo(xls_path);
-            using (ExcelPackage package = new ExcelPackage(existingFile))
-            {
-                //get the first worksheet in the workbook
-                ExcelWorksheet treatedSheet = package.Workbook.Worksheets[2];
+            //get the first worksheet in the workbook
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count];
 
-                string header = "";
-                int i = 2;
-                while (header != "end_of_file")
+            string header = "";
+            int i = 2;
+            while (header != "end_of_file")
+            {
+                header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
+                if (header == "note_on_c" || header == "note_off_c")
                 {
-                    header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
-                    if (header == "note_on_c" || header == "note_off_c")
-                    {
-                        string note = treatedSheet.Cells[i, 6].Text;
-                        string newNote = ConvertNumToNote(note);
-                        treatedSheet.Cells[i, 7].Value = newNote;
-                    }
-                    i++;
+                    string note = treatedSheet.Cells[i, 6].Text;
+                    string newNote = ConvertNumToNote(note);
+                    treatedSheet.Cells[i, 7].Value = newNote;
                 }
-                package.Save();
+                i++;
             }
-            //For this one, I'll play a scale on the piano, and check what each individual note is on the excel file. 
         }
 
-        public void CreateIOIRowEPP(string xls_path)
+        public void CreateIOIRowEPP(ExcelPackage package)
         {
             /*
              * This method creates an IOI row inside of an xls path. This method only takes max. 3 seconds to run.
@@ -138,52 +197,47 @@ namespace Midi_Analyzer.Logic
             {
                 keys[i] = new Node();
             }
-            FileInfo existingFile = new FileInfo(xls_path);
-            using (ExcelPackage package = new ExcelPackage(existingFile))
+            //get the first worksheet in the workbook
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count];
+            string header = "";
+            int last_note_played = -1;
+            //Console.WriteLine("SIZE OF USED RANGE: " + (usedRange.Rows.Count + 1).ToString());
+            int index = 1;
+            while (header != "end_of_file")
             {
-                //get the first worksheet in the workbook
-                ExcelWorksheet treatedSheet = package.Workbook.Worksheets[2];
-                string header = "";
-                int last_note_played = -1;
-                //Console.WriteLine("SIZE OF USED RANGE: " + (usedRange.Rows.Count + 1).ToString());
-                int i = 1;
-                while (header != "end_of_file")
+                header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
+                //Console.WriteLine("HEADER NAME: " + header);
+                if (treatedSheet.Cells[index, 1].Text != "0")
                 {
-                    header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
                     //Console.WriteLine("HEADER NAME: " + header);
-                    if (treatedSheet.Cells[i, 1].Text != "0")
+                    if (header == "note_on_c" && treatedSheet.Cells[index, 8].Text != "0")
                     {
-                        //Console.WriteLine("HEADER NAME: " + header);
-                        if (header == "note_on_c" && treatedSheet.Cells[i, 8].Text != "0")
+                        //Console.WriteLine("NOTE ON FOUND AT ROW: " + i.ToString());
+                        int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                        if (last_note_played != -1)
                         {
-                            //Console.WriteLine("NOTE ON FOUND AT ROW: " + i.ToString());
-                            int current_note = Int32.Parse(treatedSheet.Cells[i, 6].Text);
-                            if (last_note_played != -1)
-                            {
-                                //IOI for previous note registered
-                                double end_time = Double.Parse(treatedSheet.Cells[i, 2].Text);
-                                double ioi = end_time - keys[last_note_played].On_time;
-                                double ioi_milli = CalculateMilliseconds(ioi);
-                                string ioi_timestamp = ConvertMilliToString(ioi_milli);
-                                //Console.WriteLine("CELL I VALUE: "+workSheet.Cel)
-                                treatedSheet.Cells[keys[last_note_played].Row, 9].Value = ioi;
-                                treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_timestamp;
-                                //Start time and row for next note saved
-                                keys[current_note].On_time = end_time;
-                                keys[current_note].Row = i;
-                                last_note_played = current_note;
-                            }
-                            else
-                            {   //This would be for the first note played.
-                                keys[current_note].On_time = Double.Parse(treatedSheet.Cells[i, 2].Text);
-                                keys[current_note].Row = i;
-                                last_note_played = current_note;
-                            }
+                            //IOI for previous note registered
+                            double end_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                            double ioi = end_time - keys[last_note_played].On_time;
+                            double ioi_milli = CalculateMilliseconds(ioi);
+                            string ioi_timestamp = ConvertMilliToString(ioi_milli);
+                            //Console.WriteLine("CELL I VALUE: "+workSheet.Cel)
+                            treatedSheet.Cells[keys[last_note_played].Row, 9].Value = ioi;
+                            treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_timestamp;
+                            //Start time and row for next note saved
+                            keys[current_note].On_time = end_time;
+                            keys[current_note].Row = index;
+                            last_note_played = current_note;
+                        }
+                        else
+                        {   //This would be for the first note played.
+                            keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                            keys[current_note].Row = index;
+                            last_note_played = current_note;
                         }
                     }
-                    i++;
                 }
-                package.Save();
+                index++;
             }
         }
 
@@ -211,28 +265,55 @@ namespace Midi_Analyzer.Logic
             return newFileName;
         }
 
-        public void CreateGraphs(string xls_path)
+        private string CreateCombinedXLSFile(string[] csvPaths, string dest)
         {
-            using (ExcelPackage package = new ExcelPackage(new FileInfo(xls_path)))
+            //string newFileName = Path.GetFileName(Path.GetDirectoryName(csvPaths[0]))+"\\processedWorkbook.xlsx";
+            //string[] fileNameArray = csvPaths[0].Split(new string[] { "\\" }, StringSplitOptions.None);//System.Text.RegularExpressions.Regex.Split(csvPaths[0], @"\/\/");
+            string newFileName = dest + "\\rawWorkbook.xlsx";//string.Join("\\", fileNameArray.Take(fileNameArray.Length-1)) + "\\rawWorkbook.xlsx";
+            //Console.WriteLine("ANALYZER: PATH NAME: " + newFileName);
+            if (File.Exists(newFileName))
             {
-                ExcelWorksheet treatedSheet = package.Workbook.Worksheets[2];
-                ExcelWorksheet graphSheet = package.Workbook.Worksheets.Add("Graphs");
-                ExcelChart graph = graphSheet.Drawings.AddChart("lineChart", eChartType.Line);
-                graph.Title.Text = "IOI Graph";
-                graph.SetPosition(2, 0, 1, 0);
-                graph.SetSize(800, 600);
-                //Get the last row of the IOI column:
-                int numRows = treatedSheet.Dimension.End.Row;
-                string labelRange = "0:0";
-                string ioiRange = "I2:I100";// + numRows;
-                string timeRange = "C2:C100";// + numRows;
-                graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[timeRange]);
-                //graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[labelRange]);
-                graph.Series[0].Header = "Time";
-                //graph.Series[1].Header = "IOI range";
-
+                File.Delete(newFileName);
+            }
+            var format = new ExcelTextFormat();
+            format.Delimiter = ',';
+            format.EOL = "\r";
+            ExcelWorksheet worksheet = null;
+            string name = "";
+            using (ExcelPackage package = new ExcelPackage(new FileInfo(newFileName)))
+            {
+                for(int i =0; i < csvPaths.Length; i++)
+                {
+                    string[] path = csvPaths[i].Split(new string[] { "\\" }, StringSplitOptions.None);
+                    name = path[path.Length - 1].Split('.')[0];
+                    //Console.WriteLine("DEUH WHAT DIS NAME B0SS plz: "+csvPaths[i]);
+                    worksheet = package.Workbook.Worksheets.Add(name);
+                    //Console.WriteLine("CSV PATH FILE: " + csvPaths[i]);
+                    worksheet.Cells["A1"].LoadFromText(new FileInfo(csvPaths[i]), format, OfficeOpenXml.Table.TableStyles.Medium27, false);
+                }
                 package.Save();
             }
+            return newFileName;
+        }
+
+        public void CreateGraphs(ExcelPackage package)
+        {
+            Console.WriteLine("NUMBER OF WORKSHEETS: " + package.Workbook.Worksheets.Count);
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count];
+            ExcelWorksheet graphSheet = package.Workbook.Worksheets.Add("Graphs");
+            ExcelChart graph = graphSheet.Drawings.AddChart("lineChart", eChartType.Line);
+            graph.Title.Text = "IOI Graph";
+            graph.SetPosition(2, 0, 1, 0);
+            graph.SetSize(800, 600);
+            //Get the last row of the IOI column:
+            int numRows = treatedSheet.Dimension.End.Row;
+            string labelRange = "0:0";
+            string ioiRange = "I2:I100";// + numRows;
+            string timeRange = "C2:C100";// + numRows;
+            graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[timeRange]);
+            //graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[labelRange]);
+            graph.Series[0].Header = "Time";
+            //graph.Series[1].Header = "IOI range";
         }
 
         public string ConvertNumToNote(string num)

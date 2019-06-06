@@ -101,6 +101,7 @@
     </Page>
     <Compile Include="Logic\Analyzer.cs" />
     <Compile Include="Logic\Converter.cs" />
+    <Compile Include="Logic\ErrorDetector.cs" />
     <Compile Include="View\App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>

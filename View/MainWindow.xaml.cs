@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -105,13 +106,27 @@ namespace Midi_Analyzer
 
         private void AnalyzeFile(object sender, RoutedEventArgs e)
         {
-            ConvertFile(sender, e);
             TextBox sPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
             string[] sourceFiles = sPath.Text.Replace("\n", "").Split(';');
             string destinationFolder = destPath.Text;
+            Converter converter = new Converter();
+            converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
             Analyzer analyzer = new Analyzer();
-            analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder);
+            string xlsPath = analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder);
+
+            //Populate next tab with data
+            ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
+            xlsList.Items.Add(xlsPath);
+            TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
+            tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "errorDetection").Focus();
+        }
+
+        private void OpenFile(object sender, RoutedEventArgs e)
+        {
+            ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
+            string file = xlsList.SelectedItem.ToString();
+            Process.Start(@"" + file);
         }
     }
 }

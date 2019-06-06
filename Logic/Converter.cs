@@ -13,7 +13,7 @@ namespace Midi_Analyzer.Logic
 {
     class Converter
     {
-        public bool RunCSVBatchFile(string[] sourceFiles, string dest)
+        public bool RunCSVBatchFile(string[] sourceFiles, string dest, bool openDest=true)
         {
             try
             {
@@ -34,7 +34,10 @@ namespace Midi_Analyzer.Logic
                 Process process = Process.Start(fileName);
                 process.WaitForExit();
                 File.Delete(fileName);
-                Process.Start(@"" + dest);
+                if (openDest)
+                {
+                    Process.Start(@"" + dest);
+                }
                 return true;
             }
             catch(Exception e){
@@ -42,7 +45,7 @@ namespace Midi_Analyzer.Logic
                 return false;
             }
         }
-        public bool RunMIDIBatchFile(string[] sourceFiles, string dest)
+        public bool RunMIDIBatchFile(string[] sourceFiles, string dest, bool openDest=true)
         {
             try
             {
@@ -60,7 +63,10 @@ namespace Midi_Analyzer.Logic
                 Process process = Process.Start(fileName);
                 process.WaitForExit();
                 File.Delete(fileName);
-                Process.Start(@"" + dest);
+                if (openDest)
+                {
+                    Process.Start(@"" + dest);
+                }
                 return true;
             }
             catch (Exception e)
