@@ -24,6 +24,62 @@ namespace Midi_Analyzer.Logic
             notes = (JObject)JsonConvert.DeserializeObject(st);
         }
 
+        public string AnalyzeCSVFiles(string[] sourceFiles, string dest, string excerptCSVPath, string modelMidiPath)
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            string[] xlsPaths = new string[sourceFiles.Length];
+            string file = "";
+            string[] sourceCSVs = new string[sourceFiles.Length];
+            string[] fileSplit = null;
+            string sFileName = "";
+            for (int i = 0; i < sourceFiles.Length; i++)
+            {
+                file = sourceFiles[i];
+                fileSplit = file.Split('\\');
+                sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
+                sourceCSVs[i] = (dest + "\\" + sFileName + ".csv");
+            }
+            string sourceFile = CreateCombinedXLSFile(sourceCSVs, dest);
+
+            //Create packages
+            ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(sourceFile));
+            if (File.Exists(dest + "\\analyzedFile.xlsx"))
+            {
+                File.Delete(dest + "\\analyzedFile.xlsx");
+            }
+            ExcelPackage analysisPackage = new ExcelPackage(new FileInfo(dest + "\\analyzedFile.xlsx"));
+            ExcelPackage excerptPackage = new ExcelPackage(new FileInfo(excerptCSVPath));
+
+            //Run Analysis algorithms.
+            ExcelWorksheet treatedSheet = null;
+            for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
+            {
+                //sourcePackage = new ExcelPackage(new FileInfo(sourceFiles[j]));
+                analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
+                CreateTimeRows(sourcePackage, analysisPackage);
+                CreateLetterNoteRow(analysisPackage);
+                CreateIOIRowEPP(analysisPackage);
+                HighlightNoteRows(analysisPackage);
+            }
+            ErrorDetector errorDetector = new ErrorDetector();
+            errorDetector.ScanWorkbookForErrors(analysisPackage, excerptPackage);
+            CreateGraphs(analysisPackage);
+            analysisPackage.Save();
+
+            stopWatch.Stop();
+            // Get the elapsed time as a TimeSpan value.
+            TimeSpan ts = stopWatch.Elapsed;
+
+            // Format and display the TimeSpan value.
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                ts.Hours, ts.Minutes, ts.Seconds,
+                ts.Milliseconds / 10);
+            Console.WriteLine("RunTime " + elapsedTime);
+            return dest + "\\analyzedFile.xlsx";
+        }
+
         public string AnalyzeCSVFiles(string[] sourceFiles, string dest)
         {
             Stopwatch stopWatch = new Stopwatch();
@@ -138,6 +194,7 @@ namespace Midi_Analyzer.Logic
             treatedSheet.Cells[1, 9].Value = "IOI (pulses)";
             treatedSheet.Cells[1, 10].Value = "IOI (Timestamp)";
             treatedSheet.Cells[1, 11].Value = "Include? (Y/N)";
+            treatedSheet.Cells[1, 12].Value = "Line Number";
             string header = "";
             division = Double.Parse(workSheet.Cells[1, 6].Text);
             int workIndex = 2;

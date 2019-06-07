@@ -5,33 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Midi_Analyzer"
         mc:Ignorable="d"
-        Title="Midi Analyzer" Height="450" Width="800">
+        Title="Midi Analyzer" Height="484.233" Width="899.334">
     <Grid>
         <Grid>
             <TabControl Name="tabController">
                 <TabItem Header="Converter">
                     <Canvas HorizontalAlignment="Left" VerticalAlignment="Top">
-                        <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" Text="Welcome to the Midi converter!" VerticalAlignment="Top" Canvas.Left="286" Canvas.Top="51"/>
-                        <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" Text="Please select what file you wish to convert, and a location for the output file." VerticalAlignment="Top" Canvas.Left="159" Canvas.Top="67"/>
-                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Source Files:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="173"/>
-                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Destination Folder:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="242"/>
-                        <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
-                            Name="sourcePath" HorizontalAlignment="Left" Height="23"
-                            TextWrapping="Wrap" VerticalAlignment="Top" Width="308" Canvas.Left="230" Canvas.Top="173" />
+                        <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" Text="Welcome to the Midi Analyzer!" VerticalAlignment="Top" Canvas.Left="361" Canvas.Top="15"/>
+                        <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" Text="Please select what file you wish to convert, and a location for the output file." VerticalAlignment="Top" Canvas.Left="243" Canvas.Top="31"/>
+                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Source Files:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="107"/>
+                        <TextBlock Height="17" TextWrapping="Wrap" Width="74" Canvas.Left="99" Canvas.Top="285">
+                            <Run Text="Excerpt File"/><Run Text=":"/><LineBreak/><Run/>
+                        </TextBlock>
+                        <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Name="excerptBox"
+                                 Height="23" TextWrapping="Wrap" Width="470" Canvas.Left="230" Canvas.Top="284" 
+                                 IsEnabled="{Binding IsChecked, ElementName=midiButton}"/>
+                        <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Width="75" Click="BrowseForCSV" Canvas.Left="725" Canvas.Top="285"
+                                IsEnabled="{Binding IsChecked, ElementName=midiButton}"/>
+                        <TextBlock Height="16" TextWrapping="Wrap" Width="42" Canvas.Left="99" Canvas.Top="338" Text="Model:"/>
+                        <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Name="modelBox"
+                                 Height="23" TextWrapping="Wrap" Width="470" Canvas.Left="231" Canvas.Top="338"
+                                 IsEnabled="{Binding IsChecked, ElementName=midiButton}"/>
+                        <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Width="75" Click="BrowseForMidi" Canvas.Left="726" Canvas.Top="339"
+                                IsEnabled="{Binding IsChecked, ElementName=midiButton}"/>
+                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Destination Folder:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="228"/>
+                        <ListBox Height="92" Width="470" Name="sourcePath" Canvas.Left="230" Canvas.Top="107" KeyDown="DeleteItem" SelectionMode="Multiple"/>
                         <TextBox Text="{Binding Path=FlexString1,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                             Name="destinationPath" HorizontalAlignment="Left" Height="23"
-                            TextWrapping="Wrap" VerticalAlignment="Top" Width="308" Canvas.Left="230" Canvas.Top="238"/>
+                            TextWrapping="Wrap" VerticalAlignment="Top" Width="470" Canvas.Left="230" Canvas.Top="228"/>
                         <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Width="75" Click="BrowseForFile" RenderTransformOrigin="0.178,-0.5" Canvas.Left="592" Canvas.Top="173"/>
+                            Width="75" Click="PopulateSourceListbox" RenderTransformOrigin="0.178,-0.5" Canvas.Left="725" Canvas.Top="107"/>
                         <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Width="75" Click="BrowseForFolder" Canvas.Left="592" Canvas.Top="238"/>
+                            Width="75" Click="BrowseForFolder" Canvas.Left="725" Canvas.Top="231"/>
                         <Button Content="Convert" HorizontalAlignment="Center" VerticalAlignment="Top"
-                            Width="75" Click="ConvertFile" Canvas.Left="264" Canvas.Top="309"/>
-                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Source File Type:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="116"/>
-                        <RadioButton Name="midiButton" Content="MIDI" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Checked="buttonCheckChange" Canvas.Left="243" Canvas.Top="120"/>
-                        <RadioButton Name="csvButton" Content="CSV" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" Checked="buttonCheckChange" Canvas.Left="357" Canvas.Top="120"/>
+                            Width="75" Click="ConvertFile" Canvas.Left="317" Canvas.Top="381"/>
+                        <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Source File Type:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="69"/>
+                        <RadioButton Name="midiButton" Content="MIDI" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Checked="buttonCheckChange" Canvas.Left="243" Canvas.Top="73"/>
+                        <RadioButton Name="csvButton" Content="CSV" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" Checked="buttonCheckChange" Canvas.Left="361" Canvas.Top="73"/>
                         <Button Content="Analyze" HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Width="75" RenderTransformOrigin="0.582,0.4" Click="AnalyzeFile" IsEnabled="{Binding IsChecked, ElementName=midiButton}" Canvas.Left="418" Canvas.Top="309"/>
+                            Width="75" RenderTransformOrigin="0.582,0.4" Click="AnalyzeFile" IsEnabled="{Binding IsChecked, ElementName=midiButton}" Canvas.Left="521" Canvas.Top="381"/>
                     </Canvas>
                 </TabItem>
                 <TabItem x:Name="errorDetection" Header="Error Detection">

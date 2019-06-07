@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using Midi_Analyzer.Logic;
 
 namespace Midi_Analyzer
@@ -37,8 +38,9 @@ namespace Midi_Analyzer
              * This method is meant to clear the contents of the source path and array should the user pick a different file type.
              * It also checks which radio button is now checked, and assigns that to the sourceFileType variable.
              * */
-            TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
-            path.Text = "";
+            //TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            ListBox path = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            path.Items.Clear();
             RadioButton midiButton = (RadioButton)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("midiButton");
             if(midiButton.IsChecked == true)
             {
@@ -48,14 +50,37 @@ namespace Midi_Analyzer
             {
                 sourceFileType = "CSV";
             }
-            Console.WriteLine(sourceFileType);
+        }
+
+        private void PopulateSourceListbox(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Multiselect = true;
+            if (sourceFileType == "MIDI")
+            {
+                dlg.Filter = "MIDI files|*.MID;*.MIDI";
+            }
+            else
+            {
+                dlg.DefaultExt = ".csv";
+                dlg.Filter = "CSV Files (*.csv)|*.csv";
+            }
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true && dlg.FileNames.Length != 0)
+            {
+                ListBox sourcePathBox = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+                foreach(string file in dlg.FileNames)
+                {
+                    sourcePathBox.Items.Add(file);
+                }
+            }
         }
 
         private void BrowseForFile(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
             dlg.Multiselect = true;
-            if(sourceFileType == "MIDI")
+            if (sourceFileType == "MIDI")
             {
                 dlg.Filter = "MIDI files|*.MID;*.MIDI";
             }
@@ -71,21 +96,59 @@ namespace Midi_Analyzer
                 path.Text = String.Join(";\n", dlg.FileNames);
             }
         }
+
+        private void BrowseForMidi(object sender, RoutedEventArgs e)
+        {
+            /*
+             * Opens a dialog that can only select .mid files.
+             */
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Multiselect = false;
+            dlg.Filter = "MIDI files|*.MID;*.MIDI";
+            Nullable<bool> result = dlg.ShowDialog();
+            if(result == true && dlg.FileNames.Length != 0)
+            {
+                TextBox modelBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("modelBox");
+                modelBox.Text = dlg.FileName;
+            }
+        }
+
+        private void BrowseForCSV(object sender, RoutedEventArgs e)
+        {
+            /*
+             * Opens a dialog that can only select .csv files. 
+             */
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Multiselect = true;
+            dlg.DefaultExt = ".csv";
+            dlg.Filter = "XLSX Files (*.xlsx)|*.xlsx";
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true && dlg.FileNames.Length != 0)
+            {
+                TextBox excerptBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("excerptBox");
+                excerptBox.Text = dlg.FileName;
+            }
+        }
+
         private void BrowseForFolder(object sender, RoutedEventArgs e)
         {
-            var dlg = new System.Windows.Forms.FolderBrowserDialog();
-            System.Windows.Forms.DialogResult result = dlg.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            var dialog = new CommonOpenFileDialog();
+            dialog.IsFolderPicker = true;
+            CommonFileDialogResult result = dialog.ShowDialog();
+            //var dlg = new System.Windows.Forms.FolderBrowserDialog();
+            //System.Windows.Forms.DialogResult result = dlg.ShowDialog();
+            if (result == CommonFileDialogResult.Ok)
             {
                 TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
-                path.Text = dlg.SelectedPath;
+                path.Text = dialog.FileName;
             }
         }
         private void ConvertFile(object sender, RoutedEventArgs e)
         {
-            TextBox sPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            ListBox sPath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
-            string[] sourceFiles = sPath.Text.Replace("\n", "").Split(';');
+            string[] sourceFiles = new string[sPath.Items.Count];
+            sPath.Items.CopyTo(sourceFiles, 0);
             string destinationFolder = destPath.Text;
             Converter converter = new Converter();
             if(sourceFileType == "CSV")
@@ -106,14 +169,27 @@ namespace Midi_Analyzer
 
         private void AnalyzeFile(object sender, RoutedEventArgs e)
         {
-            TextBox sPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            ListBox sPath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
-            string[] sourceFiles = sPath.Text.Replace("\n", "").Split(';');
+
+            //added:
+            TextBox excerptBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("excerptBox");
+            TextBox modelBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("modelBox");
+            string excerptCSV = excerptBox.Text;
+            string modelMidi = modelBox.Text;
+
+            string[] sourceFiles = new string[sPath.Items.Count + 1];
+            sPath.Items.CopyTo(sourceFiles, 0);
+            sourceFiles[sourceFiles.Length - 1] = modelMidi;
+            foreach (string file in sourceFiles)
+            {
+                Console.WriteLine("FILE NAME: " + file);
+            }
             string destinationFolder = destPath.Text;
             Converter converter = new Converter();
             converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
             Analyzer analyzer = new Analyzer();
-            string xlsPath = analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder);
+            string xlsPath = analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder, excerptCSV, modelMidi);
 
             //Populate next tab with data
             ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
@@ -129,6 +205,22 @@ namespace Midi_Analyzer
             //ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
             string file = list.Content.ToString();
             Process.Start(@"" + file);
+        }
+
+        private void DeleteItem(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            ListBox sourcePath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+            if(e.Key.Equals(Key.Delete) || e.Key.Equals(Key.Back))
+            {
+                if(sourcePath.SelectedItems.Count != 0)
+                {
+                    var selectedItems = sourcePath.SelectedItems;
+                    for (int i = selectedItems.Count - 1; i > -1; i--)
+                    {
+                        sourcePath.Items.Remove(selectedItems[i]);
+                    }
+                }
+            }
         }
     }
 }

@@ -14,7 +14,9 @@ namespace Midi_Analyzer.Logic
         public void readFile(string xls_path, string reference_path)
         {
             /*
-             * This method is an attempt at error detection. During coding, I realized the problem of potential errors is very broad.
+             * DEPRECATED AND INCOMPLETE
+             * This method was originally made to try and detect errors caused by the user playing. However, there were too many ways
+             * a user could possibly make a mistake.
              * 
              */
             FileInfo xlsFile = new FileInfo(xls_path);
@@ -65,6 +67,49 @@ namespace Midi_Analyzer.Logic
                 }
             }
             excerpt.Save();
+        }
+
+        public bool[] ScanWorkbookForErrors(ExcelPackage midiWb, ExcelPackage excerptWb)
+        {
+            bool[] badSheets = new bool[midiWb.Workbook.Worksheets.Count];
+
+            ExcelWorksheet midiSheet = null;
+            ExcelWorksheet excerptSheet = excerptWb.Workbook.Worksheets[1];
+            for(int i = 1; i <= midiWb.Workbook.Worksheets.Count; i++)
+            {
+                midiSheet = midiWb.Workbook.Worksheets[i];
+                bool pass = DetectGoodPlaythrough(midiSheet, excerptSheet);
+                badSheets[i-1] = pass;
+            }
+            midiWb.Save();
+            return badSheets;
+        }
+
+        public bool DetectGoodPlaythrough(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
+        {
+            string header = "";
+            int excerptIndex = 2;
+            int midiIndex = 2;
+            while (header != "end_of_file")
+            {
+                header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
+                if(header == "note_on_c")
+                {
+                    if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
+                    {
+                        midiSheet.Cells[midiIndex, 11].Value = "Y";
+                        midiSheet.Cells[midiIndex, 12].Value = excerptSheet.Cells[excerptIndex, 1].Value;
+                        excerptIndex++;
+                    }
+                    else
+                    {
+                        midiSheet.Cells[midiIndex, 11].Value = "ERROR";
+                        return false; //error detected
+                    }
+                }
+                midiIndex++;
+            }
+            return true; //No errors found
         }
     }
 }
