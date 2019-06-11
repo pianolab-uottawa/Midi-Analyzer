@@ -7,6 +7,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Midi_Analyzer.Logic
 {
@@ -17,14 +18,27 @@ namespace Midi_Analyzer.Logic
         private double division = -1;
         private JObject notes;
 
-        public Analyzer()
+        private ExcelPackage analysisPackage;
+        private ExcelPackage excerptPackage;
+
+        private string[] sourceFiles;
+        private string destinationFolder;
+        private string excerptCSV;
+        private string modelMidi;
+
+        public Analyzer(string[] sourceFiles, string destinationFolder, string excerptCSV, string modelMidi)
         {
+            this.sourceFiles = sourceFiles;
+            this.destinationFolder = destinationFolder;
+            this.excerptCSV = excerptCSV;
+            this.modelMidi = modelMidi;
+
             var stream = File.OpenText("notes.json");
             string st = stream.ReadToEnd();
             notes = (JObject)JsonConvert.DeserializeObject(st);
         }
 
-        public string AnalyzeCSVFiles(string[] sourceFiles, string dest, string excerptCSVPath, string modelMidiPath)
+        public List<string> AnalyzeCSVFiles()
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -39,18 +53,18 @@ namespace Midi_Analyzer.Logic
                 file = sourceFiles[i];
                 fileSplit = file.Split('\\');
                 sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
-                sourceCSVs[i] = (dest + "\\" + sFileName + ".csv");
+                sourceCSVs[i] = (destinationFolder + "\\" + sFileName + ".csv");
             }
-            string sourceFile = CreateCombinedXLSFile(sourceCSVs, dest);
+            string sourceFile = CreateCombinedXLSFile(sourceCSVs, destinationFolder);
 
             //Create packages
             ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(sourceFile));
-            if (File.Exists(dest + "\\analyzedFile.xlsx"))
+            if (File.Exists(destinationFolder + "\\analyzedFile.xlsx"))
             {
-                File.Delete(dest + "\\analyzedFile.xlsx");
+                File.Delete(destinationFolder + "\\analyzedFile.xlsx");
             }
-            ExcelPackage analysisPackage = new ExcelPackage(new FileInfo(dest + "\\analyzedFile.xlsx"));
-            ExcelPackage excerptPackage = new ExcelPackage(new FileInfo(excerptCSVPath));
+            analysisPackage = new ExcelPackage(new FileInfo(destinationFolder + "\\analyzedFile.xlsx"));
+            excerptPackage = new ExcelPackage(new FileInfo(excerptCSV));
 
             //Run Analysis algorithms.
             ExcelWorksheet treatedSheet = null;
@@ -61,11 +75,11 @@ namespace Midi_Analyzer.Logic
                 CreateTimeRows(sourcePackage, analysisPackage);
                 CreateLetterNoteRow(analysisPackage);
                 CreateIOIRowEPP(analysisPackage);
-                HighlightNoteRows(analysisPackage);
+                HighlightNoteRows(); //Eventually, I want all the methods to be like this.
             }
             ErrorDetector errorDetector = new ErrorDetector();
-            errorDetector.ScanWorkbookForErrors(analysisPackage, excerptPackage);
-            CreateGraphs(analysisPackage);
+            List<string> badFiles = errorDetector.ScanWorkbookForErrors(analysisPackage, excerptPackage);
+            //CreateGraphs(analysisPackage);
             analysisPackage.Save();
 
             stopWatch.Stop();
@@ -77,77 +91,12 @@ namespace Midi_Analyzer.Logic
                 ts.Hours, ts.Minutes, ts.Seconds,
                 ts.Milliseconds / 10);
             Console.WriteLine("RunTime " + elapsedTime);
-            return dest + "\\analyzedFile.xlsx";
+            return badFiles;
         }
 
-        public string AnalyzeCSVFiles(string[] sourceFiles, string dest)
+        public void HighlightNoteRows()
         {
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
-            string[] xlsPaths = new string[sourceFiles.Length];
-            string file = "";
-            for(int i = 0; i < sourceFiles.Length; i++)
-            {
-                //file = sourceFiles[i];
-                //string[] fileSplit = file.Split('\\');
-                //string sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
-                //string csv_path = (dest + "\\" + sFileName + ".csv");
-                //string xls_path = CreateXLSFile(csv_path);
-                //xlsPaths[i] = xls_path;
-                //FileInfo existingFile = new FileInfo(xls_path);
-                //ExcelPackage package = new ExcelPackage(existingFile);
-                //CreateTimeRows(package);
-                //CreateLetterNoteRow(xls_path, package);
-                //CreateIOIRowEPP(xls_path, package);
-                // CreateGraphs(xls_path, package);
-                //HighlightNoteRows(xls_path, package);
-                //package.Save();
-            }
-            string[] sourceCSVs = new string[sourceFiles.Length];
-            string[] fileSplit = null;
-            string sFileName = "";
-            for(int i = 0; i< sourceFiles.Length; i++)
-            {
-                file = sourceFiles[i];
-                fileSplit = file.Split('\\');
-                sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
-                sourceCSVs[i] = (dest + "\\" + sFileName + ".csv");
-            }
-            string sourceFile = CreateCombinedXLSFile(sourceCSVs, dest);
-            ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(sourceFile));
-            if (File.Exists(dest + "\\analyzedFile.xlsx"))
-            {
-                File.Delete(dest + "\\analyzedFile.xlsx");
-            }
-            ExcelPackage analysisPackage = new ExcelPackage(new FileInfo(dest+"\\analyzedFile.xlsx"));
-            ExcelWorksheet treatedSheet = null;
-            for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
-            {
-                //sourcePackage = new ExcelPackage(new FileInfo(sourceFiles[j]));
-                analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
-                CreateTimeRows(sourcePackage, analysisPackage);
-                CreateLetterNoteRow(analysisPackage);
-                CreateIOIRowEPP(analysisPackage);
-                HighlightNoteRows(analysisPackage);   
-            }
-            CreateGraphs(analysisPackage);
-            analysisPackage.Save();
-
-            stopWatch.Stop();
-            // Get the elapsed time as a TimeSpan value.
-            TimeSpan ts = stopWatch.Elapsed;
-
-            // Format and display the TimeSpan value.
-            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
-                ts.Hours, ts.Minutes, ts.Seconds,
-                ts.Milliseconds / 10);
-            Console.WriteLine("RunTime " + elapsedTime);
-            return dest + "\\analyzedFile.xlsx";
-        }
-
-        public void HighlightNoteRows(ExcelPackage package)
-        {
-            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count]; //get last sheet, for last file. 
+            ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[analysisPackage.Workbook.Worksheets.Count]; //get last sheet, for last file. 
             int i = 2;
             string header = "";
             while(header != "end_of_file")
@@ -165,12 +114,6 @@ namespace Midi_Analyzer.Logic
                 }
                 i++;
             }
-        }
-
-        public void CreateTimeRowsFromCsvs(string csvPath, string xlsPath)
-        {
-            FileInfo existingFile = new FileInfo(csvPath);
-            ExcelPackage package = new ExcelPackage(existingFile);
         }
 
         public void CreateTimeRows(ExcelPackage sourcePackage, ExcelPackage targetPackage)
@@ -192,7 +135,7 @@ namespace Midi_Analyzer.Logic
             treatedSheet.Cells[1, 7].Value = "Letter Note";
             treatedSheet.Cells[1, 8].Value = "Velocity";
             treatedSheet.Cells[1, 9].Value = "IOI (pulses)";
-            treatedSheet.Cells[1, 10].Value = "IOI (Timestamp)";
+            treatedSheet.Cells[1, 10].Value = "IOI (Milliseconds)";
             treatedSheet.Cells[1, 11].Value = "Include? (Y/N)";
             treatedSheet.Cells[1, 12].Value = "Line Number";
             string header = "";
@@ -206,8 +149,8 @@ namespace Midi_Analyzer.Logic
                 {
                     tempo = Double.Parse(workSheet.Cells[workIndex, 4].Text);
                 }
-                if(header == "note_on_c" || header == "note_off_c" || header == "start_track" ||
-                    header == "end_track" || header == "end_of_file" || header == "control_c")
+                if(header == "note_on_c" || header == "start_track" ||
+                    header == "end_track" || header == "end_of_file" || header == "control_c") //|| header == "note_off_c" 
                 {
                     double milli = CalculateMilliseconds(Double.Parse(workSheet.Cells[workIndex, 2].Text));
                     string timestamp = ConvertMilliToString(milli);
@@ -280,7 +223,7 @@ namespace Midi_Analyzer.Logic
                             string ioi_timestamp = ConvertMilliToString(ioi_milli);
                             //Console.WriteLine("CELL I VALUE: "+workSheet.Cel)
                             treatedSheet.Cells[keys[last_note_played].Row, 9].Value = ioi;
-                            treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_timestamp;
+                            treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_milli;
                             //Start time and row for next note saved
                             keys[current_note].On_time = end_time;
                             keys[current_note].Row = index;
@@ -353,24 +296,11 @@ namespace Midi_Analyzer.Logic
             return newFileName;
         }
 
-        public void CreateGraphs(ExcelPackage package)
+        public void CreateGraphs()
         {
-            Console.WriteLine("NUMBER OF WORKSHEETS: " + package.Workbook.Worksheets.Count);
-            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count];
-            ExcelWorksheet graphSheet = package.Workbook.Worksheets.Add("Graphs");
-            ExcelChart graph = graphSheet.Drawings.AddChart("lineChart", eChartType.Line);
-            graph.Title.Text = "IOI Graph";
-            graph.SetPosition(2, 0, 1, 0);
-            graph.SetSize(800, 600);
-            //Get the last row of the IOI column:
-            int numRows = treatedSheet.Dimension.End.Row;
-            string labelRange = "0:0";
-            string ioiRange = "I2:I100";// + numRows;
-            string timeRange = "C2:C100";// + numRows;
-            graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[timeRange]);
-            //graph.Series.Add(treatedSheet.Cells[ioiRange], treatedSheet.Cells[labelRange]);
-            graph.Series[0].Header = "Time";
-            //graph.Series[1].Header = "IOI range";
+            analysisPackage = new ExcelPackage(new FileInfo(destinationFolder + "\\analyzedFile.xlsx")); // You do this to save the changes the user made
+            Grapher grapher = new Grapher();
+            grapher.CreateIOIGraph(analysisPackage, excerptPackage);
         }
 
         public string ConvertNumToNote(string num)
@@ -394,6 +324,56 @@ namespace Midi_Analyzer.Logic
                                     t.Seconds,
                                     t.Milliseconds);
             return answer;
+        }
+
+        //DEPRECATED METHODS#############################################################################################
+
+        public string AnalyzeCSVFiles(string[] sourceFiles, string dest)
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+            string[] xlsPaths = new string[sourceFiles.Length];
+            string file = "";
+            string[] sourceCSVs = new string[sourceFiles.Length];
+            string[] fileSplit = null;
+            string sFileName = "";
+            for (int i = 0; i < sourceFiles.Length; i++)
+            {
+                file = sourceFiles[i];
+                fileSplit = file.Split('\\');
+                sFileName = fileSplit[fileSplit.Length - 1].Split('.')[0];
+                sourceCSVs[i] = (dest + "\\" + sFileName + ".csv");
+            }
+            string sourceFile = CreateCombinedXLSFile(sourceCSVs, dest);
+            ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(sourceFile));
+            if (File.Exists(dest + "\\analyzedFile.xlsx"))
+            {
+                File.Delete(dest + "\\analyzedFile.xlsx");
+            }
+            ExcelPackage analysisPackage = new ExcelPackage(new FileInfo(dest + "\\analyzedFile.xlsx"));
+            ExcelWorksheet treatedSheet = null;
+            for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
+            {
+                //sourcePackage = new ExcelPackage(new FileInfo(sourceFiles[j]));
+                analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
+                CreateTimeRows(sourcePackage, analysisPackage);
+                CreateLetterNoteRow(analysisPackage);
+                CreateIOIRowEPP(analysisPackage);
+                HighlightNoteRows();
+            }
+            CreateGraphs();
+            analysisPackage.Save();
+
+            stopWatch.Stop();
+            // Get the elapsed time as a TimeSpan value.
+            TimeSpan ts = stopWatch.Elapsed;
+
+            // Format and display the TimeSpan value.
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                ts.Hours, ts.Minutes, ts.Seconds,
+                ts.Milliseconds / 10);
+            Console.WriteLine("RunTime " + elapsedTime);
+            return dest + "\\analyzedFile.xlsx";
         }
 
         public void CreateIoIRow(string csv_path)

@@ -25,6 +25,7 @@ namespace Midi_Analyzer
     public partial class MainWindow : Window
     {
         private string sourceFileType;
+        private Analyzer analyzer;
 
         public MainWindow()
         {
@@ -188,23 +189,37 @@ namespace Midi_Analyzer
             string destinationFolder = destPath.Text;
             Converter converter = new Converter();
             converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
-            Analyzer analyzer = new Analyzer();
-            string xlsPath = analyzer.AnalyzeCSVFiles(sourceFiles, destinationFolder, excerptCSV, modelMidi);
+            analyzer = new Analyzer(sourceFiles, destinationFolder, excerptCSV, modelMidi);
+            List<string> badSheets = analyzer.AnalyzeCSVFiles();
 
             //Populate next tab with data
             ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
-            xlsList.Items.Add(xlsPath);
+            xlsList.Items.Clear();
+            foreach(string name in badSheets)
+            {
+                xlsList.Items.Add(name);
+            }
             TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "errorDetection").Focus();
         }
 
         private void OpenFile(object sender, MouseButtonEventArgs e)
         {
-            Console.WriteLine("SENDER TYPE??: " + sender.ToString());
+            Console.WriteLine("SENDER TYPE: " + sender.ToString());
             var list = sender as ListBoxItem;
-            //ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
-            string file = list.Content.ToString();
+            TextBox destPath = this.destinationPath;
+            //TextBox destPath = FindResource("destinationPath") as TextBox;
+            //TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent.Parent as FrameworkElement).FindName("destinationPath");
+            string file = destPath.Text + "//analyzedFile.xlsx";
+
             Process.Start(@"" + file);
+        }
+
+        private void GenerateGraphs(object sender, RoutedEventArgs e)
+        {
+            analyzer.CreateGraphs();
+            TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
+            tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "results").Focus();
         }
 
         private void DeleteItem(object sender, System.Windows.Input.KeyEventArgs e)

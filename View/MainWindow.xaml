@@ -44,24 +44,25 @@
                         <TextBlock HorizontalAlignment="Left" TextWrapping="Wrap" Text="Source File Type:" VerticalAlignment="Top" Canvas.Left="99" Canvas.Top="69"/>
                         <RadioButton Name="midiButton" Content="MIDI" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="True" Checked="buttonCheckChange" Canvas.Left="243" Canvas.Top="73"/>
                         <RadioButton Name="csvButton" Content="CSV" GroupName="Group1" HorizontalAlignment="Left" VerticalAlignment="Top" Checked="buttonCheckChange" Canvas.Left="361" Canvas.Top="73"/>
-                        <Button Content="Analyze" HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Width="75" RenderTransformOrigin="0.582,0.4" Click="AnalyzeFile" IsEnabled="{Binding IsChecked, ElementName=midiButton}" Canvas.Left="521" Canvas.Top="381"/>
+                        <Button Content="Analyze" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" RenderTransformOrigin="0.582,0.4"
+                                Click="AnalyzeFile" IsEnabled="{Binding IsChecked, ElementName=midiButton}" Canvas.Left="521" Canvas.Top="381"/>
                     </Canvas>
                 </TabItem>
                 <TabItem x:Name="errorDetection" Header="Error Detection">
                     <Canvas>
-                        <ListBox x:Name="xlsFileList" Height="198" Canvas.Left="89" Canvas.Top="103" Width="603">
+                        <ListBox x:Name="xlsFileList" Height="198" Canvas.Left="147" Canvas.Top="116" Width="603">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListBoxItem}">
                                     <EventSetter Event="MouseDoubleClick" Handler="OpenFile"/>
                                 </Style>
                             </ListBox.ItemContainerStyle>
                         </ListBox>
-                        <TextBlock TextWrapping="Wrap" Canvas.Top="37" Canvas.Left="181" TextAlignment="Center"><Run Text="Your midi files have been converted into the xls files, as specified below."/><LineBreak/><Run Text="Please specify in "/><Run FontWeight="Bold" Text="Column K "/><Run Text="which notes you wish to include ("/><Run FontWeight="Bold" Text="Y"/><Run Text=") or exclude "/><Run FontWeight="Bold" Text="(N)."/><LineBreak/><Run FontWeight="Bold"/></TextBlock>
+                        <TextBlock TextWrapping="Wrap" Canvas.Top="24" Canvas.Left="181" TextAlignment="Center"><Run Text="Your midi files have been converted into a single xls file. During basic error correction, the following"/><LineBreak/><Run Text="files had errors"/><Run Text=". "/><Run Text="Please specify in "/><Run FontWeight="Bold" Text="Column K "/><Run Text="of the sheet corresponding to the file which notes"/><LineBreak/><Run Text=" you wish to include ("/><Run FontWeight="Bold" Text="Y"/><Run Text=") or exclude "/><Run FontWeight="Bold" Text="(N)"/><Run Text=". Then, save"/><Run Text=" the file and press the &quot;"/><Run FontStyle="Italic" Text="Finish"/><Run Text="&quot; button below."/><LineBreak/></TextBlock>
                         <TextBlock Canvas.Left="360" TextWrapping="Wrap" Text="" Canvas.Top="59"/>
+                        <Button Content="Finish" Canvas.Left="408" Canvas.Top="365" Width="75" Name="finishButton" Click="GenerateGraphs"/>
                     </Canvas>
                 </TabItem>
-                <TabItem Header="Analyzer">
+                <TabItem x:Name="results" Header="Results">
                     <Label Content="Working on it too..."></Label>
                 </TabItem>
             </TabControl>

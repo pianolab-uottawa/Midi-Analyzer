@@ -69,17 +69,19 @@ namespace Midi_Analyzer.Logic
             excerpt.Save();
         }
 
-        public bool[] ScanWorkbookForErrors(ExcelPackage midiWb, ExcelPackage excerptWb)
+        public List<string> ScanWorkbookForErrors(ExcelPackage midiWb, ExcelPackage excerptWb)
         {
-            bool[] badSheets = new bool[midiWb.Workbook.Worksheets.Count];
+            List<string> badSheets = new List<string>();
 
             ExcelWorksheet midiSheet = null;
             ExcelWorksheet excerptSheet = excerptWb.Workbook.Worksheets[1];
             for(int i = 1; i <= midiWb.Workbook.Worksheets.Count; i++)
             {
                 midiSheet = midiWb.Workbook.Worksheets[i];
-                bool pass = DetectGoodPlaythrough(midiSheet, excerptSheet);
-                badSheets[i-1] = pass;
+                if(!DetectGoodPlaythrough(midiSheet, excerptSheet))
+                {
+                    badSheets.Add(midiSheet.Name);
+                }
             }
             midiWb.Save();
             return badSheets;
@@ -95,6 +97,9 @@ namespace Midi_Analyzer.Logic
                 header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
                 if(header == "note_on_c")
                 {
+                    if(excerptSheet.Cells[excerptIndex, 1].Text.Trim().ToLower() == "end" || excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower() == "end"){
+                        excerptIndex = 2; //Resets the excerpt, in case the person has multiple attempts on the same track.
+                    }
                     if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
                     {
                         midiSheet.Cells[midiIndex, 11].Value = "Y";
