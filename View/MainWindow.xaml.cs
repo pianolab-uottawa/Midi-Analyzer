@@ -190,7 +190,7 @@ namespace Midi_Analyzer
             Converter converter = new Converter();
             converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
             analyzer = new Analyzer(sourceFiles, destinationFolder, excerptCSV, modelMidi);
-            List<string> badSheets = analyzer.AnalyzeCSVFiles();
+            List<string> badSheets = analyzer.AnalyzeCSVFilesStep1();
 
             //Populate next tab with data
             ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
@@ -217,7 +217,7 @@ namespace Midi_Analyzer
 
         private void GenerateGraphs(object sender, RoutedEventArgs e)
         {
-            analyzer.CreateGraphs();
+            analyzer.AnalyzeCSVFilesStep2();
             TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "results").Focus();
         }

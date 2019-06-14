@@ -102,19 +102,52 @@ namespace Midi_Analyzer.Logic
                     }
                     if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
                     {
-                        midiSheet.Cells[midiIndex, 11].Value = "Y";
+                        midiSheet.Cells[midiIndex, 11].Value = excerptSheet.Cells[excerptIndex, 5].Value;
                         midiSheet.Cells[midiIndex, 12].Value = excerptSheet.Cells[excerptIndex, 1].Value;
+                        midiSheet.Cells[midiIndex, 13].Value = excerptSheet.Cells[excerptIndex, 4].Value;
                         excerptIndex++;
                     }
                     else
                     {
-                        midiSheet.Cells[midiIndex, 11].Value = "ERROR";
-                        return false; //error detected
+                        midiSheet.Cells[midiIndex, 13].Value = "ERROR";
+                        return DetectGoodPlaythroughReversed(midiSheet, excerptSheet); //error detected
                     }
                 }
                 midiIndex++;
             }
             return true; //No errors found
+        }
+
+        public bool DetectGoodPlaythroughReversed(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
+        {
+            string header = "";
+            int excerptIndex = excerptSheet.Dimension.End.Row;
+            int midiIndex = midiSheet.Dimension.End.Row;
+            while (header != "start_track")
+            {
+                header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
+                if (header == "note_on_c")
+                {
+                    if (excerptSheet.Cells[excerptIndex, 1].Text.Trim().ToLower() == "end" || excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower() == "end")
+                    {
+                        excerptIndex = excerptSheet.Dimension.End.Row; //Resets the excerpt, in case the person has multiple attempts on the same track.
+                    }
+                    if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
+                    {
+                        midiSheet.Cells[midiIndex, 11].Value = excerptSheet.Cells[excerptIndex, 5].Value;
+                        midiSheet.Cells[midiIndex, 12].Value = excerptSheet.Cells[excerptIndex, 1].Value;
+                        midiSheet.Cells[midiIndex, 13].Value = excerptSheet.Cells[excerptIndex, 4].Value;
+                        excerptIndex--;
+                    }
+                    else
+                    {
+                        midiSheet.Cells[midiIndex, 13].Value = "ERROR";
+                        return false; //error detected
+                    }
+                }
+                midiIndex--;
+            }
+            return true; //No errors found (This technically should not be possible.
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Midi_Analyzer.Logic
             notes = (JObject)JsonConvert.DeserializeObject(st);
         }
 
-        public List<string> AnalyzeCSVFiles()
+        public List<string> AnalyzeCSVFilesStep1()
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -74,7 +74,6 @@ namespace Midi_Analyzer.Logic
                 analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
                 CreateTimeRows(sourcePackage, analysisPackage);
                 CreateLetterNoteRow(analysisPackage);
-                CreateIOIRowEPP(analysisPackage);
                 HighlightNoteRows(); //Eventually, I want all the methods to be like this.
             }
             ErrorDetector errorDetector = new ErrorDetector();
@@ -92,6 +91,32 @@ namespace Midi_Analyzer.Logic
                 ts.Milliseconds / 10);
             Console.WriteLine("RunTime " + elapsedTime);
             return badFiles;
+        }
+
+        public void AnalyzeCSVFilesStep2()
+        {
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            analysisPackage = new ExcelPackage(new FileInfo(destinationFolder + "\\analyzedFile.xlsx")); // You do this to save the changes the user made
+
+            ExcelPackage sourcePackage = new ExcelPackage(new FileInfo(destinationFolder+"\\rawWorkbook.xlsx"));
+            for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
+            {
+                CreateIOIRowEPP(analysisPackage, j);
+            }
+            CreateGraphs();
+            analysisPackage.Save();
+
+            stopWatch.Stop();
+            // Get the elapsed time as a TimeSpan value.
+            TimeSpan ts = stopWatch.Elapsed;
+
+            // Format and display the TimeSpan value.
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                ts.Hours, ts.Minutes, ts.Seconds,
+                ts.Milliseconds / 10);
+            Console.WriteLine("RunTime " + elapsedTime);
         }
 
         public void HighlightNoteRows()
@@ -149,7 +174,7 @@ namespace Midi_Analyzer.Logic
                 {
                     tempo = Double.Parse(workSheet.Cells[workIndex, 4].Text);
                 }
-                if(header == "note_on_c" || header == "start_track" ||
+                if(header == "note_on_c" || header == "start_track" || header == "note_off_c" ||
                     header == "end_track" || header == "end_of_file" || header == "control_c") //|| header == "note_off_c" 
                 {
                     double milli = CalculateMilliseconds(Double.Parse(workSheet.Cells[workIndex, 2].Text));
@@ -187,7 +212,7 @@ namespace Midi_Analyzer.Logic
             }
         }
 
-        public void CreateIOIRowEPP(ExcelPackage package)
+        public void CreateIOIRowEPP(ExcelPackage package, int workSheetIndex)
         {
             /*
              * This method creates an IOI row inside of an xls path. This method only takes max. 3 seconds to run.
@@ -198,7 +223,7 @@ namespace Midi_Analyzer.Logic
                 keys[i] = new Node();
             }
             //get the first worksheet in the workbook
-            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[package.Workbook.Worksheets.Count];
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[workSheetIndex];
             string header = "";
             int last_note_played = -1;
             //Console.WriteLine("SIZE OF USED RANGE: " + (usedRange.Rows.Count + 1).ToString());
@@ -212,22 +237,31 @@ namespace Midi_Analyzer.Logic
                     //Console.WriteLine("HEADER NAME: " + header);
                     if (header == "note_on_c" && treatedSheet.Cells[index, 8].Text != "0")
                     {
-                        //Console.WriteLine("NOTE ON FOUND AT ROW: " + i.ToString());
                         int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                        //Console.WriteLine("NOTE ON FOUND AT ROW: " + i.ToString());
                         if (last_note_played != -1)
                         {
-                            //IOI for previous note registered
-                            double end_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
-                            double ioi = end_time - keys[last_note_played].On_time;
-                            double ioi_milli = CalculateMilliseconds(ioi);
-                            string ioi_timestamp = ConvertMilliToString(ioi_milli);
-                            //Console.WriteLine("CELL I VALUE: "+workSheet.Cel)
-                            treatedSheet.Cells[keys[last_note_played].Row, 9].Value = ioi;
-                            treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_milli;
-                            //Start time and row for next note saved
-                            keys[current_note].On_time = end_time;
-                            keys[current_note].Row = index;
-                            last_note_played = current_note;
+                            if (treatedSheet.Cells[keys[last_note_played].Row, 11].Text.Trim().ToLower() == "y")
+                            {
+                                //IOI for previous note registered
+                                double end_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                                double ioi = end_time - keys[last_note_played].On_time;
+                                double ioi_milli = CalculateMilliseconds(ioi);
+                                string ioi_timestamp = ConvertMilliToString(ioi_milli);
+                                //Console.WriteLine("CELL I VALUE: "+workSheet.Cel)
+                                treatedSheet.Cells[keys[last_note_played].Row, 9].Value = ioi;
+                                treatedSheet.Cells[keys[last_note_played].Row, 10].Value = ioi_milli;
+                                //Start time and row for next note saved
+                                keys[current_note].On_time = end_time;
+                                keys[current_note].Row = index;
+                                last_note_played = current_note;
+                            }
+                            else
+                            {   //Reset the count as if it were the first note being played.
+                                keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                                keys[current_note].Row = index;
+                                last_note_played = current_note;
+                            }
                         }
                         else
                         {   //This would be for the first note played.
@@ -239,6 +273,7 @@ namespace Midi_Analyzer.Logic
                 }
                 index++;
             }
+            package.Save();
         }
 
         public string CreateXLSFile(string csv_path)
@@ -298,9 +333,10 @@ namespace Midi_Analyzer.Logic
 
         public void CreateGraphs()
         {
-            analysisPackage = new ExcelPackage(new FileInfo(destinationFolder + "\\analyzedFile.xlsx")); // You do this to save the changes the user made
             Grapher grapher = new Grapher();
-            grapher.CreateIOIGraph(analysisPackage, excerptPackage);
+            int numSamples = analysisPackage.Workbook.Worksheets.Count;
+            grapher.CreateTeacherIOIGraph(analysisPackage, excerptPackage, numSamples);
+            grapher.CreateIOIGraph(analysisPackage, excerptPackage, numSamples);
         }
 
         public string ConvertNumToNote(string num)
@@ -358,7 +394,7 @@ namespace Midi_Analyzer.Logic
                 analysisPackage.Workbook.Worksheets.Add(sourcePackage.Workbook.Worksheets[j].Name);
                 CreateTimeRows(sourcePackage, analysisPackage);
                 CreateLetterNoteRow(analysisPackage);
-                CreateIOIRowEPP(analysisPackage);
+                CreateIOIRowEPP(analysisPackage, j);
                 HighlightNoteRows();
             }
             CreateGraphs();
