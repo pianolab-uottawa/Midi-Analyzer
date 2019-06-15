@@ -28,7 +28,7 @@ namespace Midi_Analyzer.Logic
         public void CreateTeacherIOIGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
         {
             ExcelWorksheet treatedSheet = null;
-            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Teacher IOI Graph");
+            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Teacher Tone Lengthening");
 
             //Create Header
             int columnIndex = 1;
@@ -120,7 +120,7 @@ namespace Midi_Analyzer.Logic
         public void CreateIOIGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
         {
             ExcelWorksheet treatedSheet = null;
-            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("IOI Graph");
+            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Tone Lengthening");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
 
             //Create Header
@@ -150,12 +150,6 @@ namespace Midi_Analyzer.Logic
                         graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                         graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
                         int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
-                        if(lineNumber == 15)
-                        {
-                            //Console.WriteLine("MEAN IOI: " + meanIOI);
-                            //Console.WriteLine(": " + meanIOI);
-                            //Console.WriteLine("MEAN IOI: " + meanIOI);
-                        }
                         int ioiDeviation = CalculateMeanIOIDeviation(meanIOI, (double)(treatedSheet.Cells[treatedIndex, 10].Value), 
                                                                         (double)excerptSheet.Cells[lineNumber + 1, 4                                                                                            ].Value);
                         graphSheet.Cells[graphIndex, columnIndex + 3].Value = ioiDeviation;
@@ -179,15 +173,157 @@ namespace Midi_Analyzer.Logic
                 graph.Series[i-1].Header = treatedSheet.Name;
                 columnIndex += 6;
             }
-            graph.Title.Text = "IOI Graph";
+            graph.Title.Text = "IOI Deviation Graph";
             graph.SetSize(800, 600);
             graph.SetPosition(2, 0, columnIndex, 0);
             analysisPackage.Save();
         }
 
-        public void CreateVelocityGraph(ExcelPackage analysisPackage)
+        public void CreateVelocityGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
         {
-            
+            ExcelWorksheet treatedSheet = null;
+            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Dynamics");
+
+            //Create Header
+            int columnIndex = 1;
+            ExcelChart graph = graphSheet.Drawings.AddChart("lineChart", eChartType.LineMarkers);
+            for (int i = 1; i <= numSamples; i++)
+            {
+                //Header writing works no problem.
+                treatedSheet = analysisPackage.Workbook.Worksheets[i];
+                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
+                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
+                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
+                graphSheet.Cells[1, columnIndex + 3].Value = "Velocity Deviation (%)";
+
+                //Variables
+                double meanVel = CalculateMeanVelocity(treatedSheet);
+                graphSheet.Cells[1, columnIndex + 4].Value = meanVel;
+                string header = "";
+                int treatedIndex = 2;   //Skip header
+                int graphIndex = 2;     //Skip header
+                while (header != "end_of_file")
+                {
+                    header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                    {
+
+                        graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
+                        int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
+                        int velDeviation = CalculateMeanVelDeviation(meanVel, (double)(treatedSheet.Cells[treatedIndex, 8].Value));
+                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = velDeviation;
+                        //graphSheet.Cells[graphIndex, columnIndex + 3].Style.Numberformat.Format = "#0.00%";
+                        graphIndex++;
+                    }
+                    else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
+                    {
+                        graphIndex++;
+                    }
+                    treatedIndex++;
+                }
+                //Get the last row of the IOI column:
+                int numRows = graphSheet.Dimension.End.Row;
+
+                string lineNumColLetter = ConvertIndexToLetter(columnIndex + 1);
+                string ioiColLetter = ConvertIndexToLetter(columnIndex + 3);
+                string ioiRange = ioiColLetter + "2:" + ioiColLetter + (excerptPackage.Workbook.Worksheets[1].Dimension.End.Row - 1).ToString();
+                string timeRange = lineNumColLetter + "2:" + lineNumColLetter + (excerptPackage.Workbook.Worksheets[1].Dimension.End.Row - 1).ToString();
+                graph.Series.Add(graphSheet.Cells[ioiRange], graphSheet.Cells[timeRange]);
+                graph.Series[i - 1].Header = treatedSheet.Name;
+                columnIndex += 6;
+            }
+            graph.Title.Text = "Velocity Deviation Graph";
+            graph.SetSize(800, 600);
+            graph.SetPosition(2, 0, columnIndex, 0);
+            analysisPackage.Save();
+        }
+
+        public void CreateTeacherVelocityGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        {
+            ExcelWorksheet treatedSheet = null;
+            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Teacher Dynamics Graph");
+
+            //Create Header
+            int columnIndex = 1;
+            ExcelChart graph = graphSheet.Drawings.AddChart("lineChart", eChartType.LineMarkers);
+            int seriesIndex = numSamples;
+            int modelVelCol = 4;
+            for (int i = numSamples; i > 0; i--)
+            {
+                //Header writing works no problem.
+                treatedSheet = analysisPackage.Workbook.Worksheets[i];
+                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
+                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
+                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
+                graphSheet.Cells[1, columnIndex + 3].Value = "Velocity";
+
+                string header = "";
+                int treatedIndex = 2;   //Skip header
+                int graphIndex = 2;     //Skip header
+
+                if (i == seriesIndex) //This is the model
+                {
+                    while (header != "end_of_file")
+                    {
+                        header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                        if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                        {
+                            graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
+                            graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
+                            graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 8].Value;
+                            graphIndex++;
+                        }
+                        else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
+                        {
+                            graphIndex++;
+                        }
+                        treatedIndex++;
+                    }
+                }
+                else       //These are the samples
+                {
+                    while (header != "end_of_file")
+                    {
+                        header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                        if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y" ||
+                            treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == ""))
+                        {
+
+                            graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
+                            graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
+                            if (graphSheet.Cells[graphIndex, modelVelCol].Value != null)
+                            {
+                                //graphSheet.Cells[graphIndex, columnIndex + 3].Style.Numberformat.Format = "#0.00%";
+                                int velDeviation = CalculateVelDeviation((double)(graphSheet.Cells[graphIndex, modelVelCol].Value),
+                                                                                                            (double)(treatedSheet.Cells[treatedIndex, 8].Value)); //IOI
+                                graphSheet.Cells[graphIndex, columnIndex + 3].Value = velDeviation;
+                            }
+                            //graphSheet.Cells[graphIndex, columnIndex + 3].Style.Numberformat.Format = "#0.00%";
+                            graphIndex++;
+                        }
+                        else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
+                        {
+                            graphIndex++;
+                        }
+                        treatedIndex++;
+                    }
+                    //Get the last row of the IOI column:
+                    int numRows = graphSheet.Dimension.End.Row;
+
+                    string lineNumColLetter = ConvertIndexToLetter(columnIndex + 1);
+                    string ioiColLetter = ConvertIndexToLetter(columnIndex + 3);
+                    string ioiRange = ioiColLetter + "2:" + ioiColLetter + (excerptPackage.Workbook.Worksheets[1].Dimension.End.Row - 1).ToString();
+                    string timeRange = lineNumColLetter + "2:" + lineNumColLetter + (excerptPackage.Workbook.Worksheets[1].Dimension.End.Row - 1).ToString();
+                    graph.Series.Add(graphSheet.Cells[ioiRange], graphSheet.Cells[timeRange]);
+                    graph.Series[seriesIndex - i - 1].Header = treatedSheet.Name;
+                }
+                columnIndex += 6;
+            }
+            graph.Title.Text = "Teacher Dynamic Graph";
+            graph.SetSize(800, 600);
+            graph.SetPosition(2, 0, columnIndex, 0);
+            analysisPackage.Save();
         }
 
         public int CalculateMeanIOIDeviation(double meanIOI, double sampleIOI, double noteLength)
@@ -217,6 +353,9 @@ namespace Midi_Analyzer.Logic
             }
         }
 
+        /*
+         * This method calculates the mean IOI of a given worksheet (The worksheet MUST be in the format generated by the tool)! 
+         */
         public double CalculateMeanIOI(ExcelWorksheet analyzedSheet)
         {
             int index = 2;
@@ -232,9 +371,52 @@ namespace Midi_Analyzer.Logic
                 index++;
             }
             double totalBeats = CalculateTotalBeats(analyzedSheet);
-            Console.WriteLine("TOTAL IOI: " + totalIOI);
-            Console.WriteLine("TOTAL BEATS: " + totalBeats);
             return totalIOI / totalBeats;
+        }
+
+        public int CalculateMeanVelDeviation(double meanVel, double sampleVel)
+        {
+            if (sampleVel != meanVel)
+            {
+                double deviation = ((sampleVel - meanVel) / meanVel) * 100;
+                return (int)deviation;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public double CalculateMeanVelocity(ExcelWorksheet analyzedSheet)
+        {
+            int index = 2;
+            string header = "";
+            double totalVel = 0.0;
+            int numNotes = 0;
+            while (header != "end_of_file")
+            {
+                header = analyzedSheet.Cells[index, 4].Text.Trim().ToLower().ToLower();
+                if (header == "note_on_c" && analyzedSheet.Cells[index, 11].Text.Trim().ToLower() == "y")
+                {
+                    totalVel += (double)(analyzedSheet.Cells[index, 8].Value);
+                    numNotes++;
+                }
+                index++;
+            }
+            return totalVel / numNotes;
+        }
+
+        public int CalculateVelDeviation(double modelVel, double sampleVel)
+        {
+            if (sampleVel != modelVel)
+            {
+                double deviation = ((sampleVel / modelVel) - 1) * 100;
+                return (int)deviation;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         public int CalculateMeanIOIV2(ExcelWorksheet sheet)

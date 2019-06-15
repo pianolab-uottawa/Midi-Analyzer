@@ -336,7 +336,9 @@ namespace Midi_Analyzer.Logic
             Grapher grapher = new Grapher();
             int numSamples = analysisPackage.Workbook.Worksheets.Count;
             grapher.CreateTeacherIOIGraph(analysisPackage, excerptPackage, numSamples);
+            grapher.CreateTeacherVelocityGraph(analysisPackage, excerptPackage, numSamples);
             grapher.CreateIOIGraph(analysisPackage, excerptPackage, numSamples);
+            grapher.CreateVelocityGraph(analysisPackage, excerptPackage, numSamples);
         }
 
         public string ConvertNumToNote(string num)

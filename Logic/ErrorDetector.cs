@@ -149,5 +149,12 @@ namespace Midi_Analyzer.Logic
             }
             return true; //No errors found (This technically should not be possible.
         }
+
+        public bool GroupingDetection(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
+        {
+            //Convert the entire excel range into an array. Then, scan through the array.
+            //Should an error be detected, you convert 10 items into one big string. You also group 3 notes into another string.
+            //Then, you search for the index of the small group inside the big group. big yes.
+        }
     }
 }
