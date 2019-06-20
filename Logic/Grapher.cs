@@ -524,6 +524,7 @@ namespace Midi_Analyzer.Logic
             Image image = Image.FromFile(imagePath);
             var scorePicture = sheet.Drawings.AddPicture("Score", image);
             scorePicture.SetPosition(row, 0, col, 0);
+            int horizontalCoord = scorePicture.
             scorePicture.SetSize(785, 71);
         }
 
