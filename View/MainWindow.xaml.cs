@@ -131,6 +131,22 @@ namespace Midi_Analyzer
             }
         }
 
+        private void BrowseForImage(object sender, RoutedEventArgs e)
+        {
+            /*
+             * Opens a dialog that can only select image files. 
+             */
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Multiselect = true;
+            dlg.Filter = "Image Files |*.jpg;*.jpeg;*.png;*.bmp";
+            Nullable<bool> result = dlg.ShowDialog();
+            if (result == true && dlg.FileNames.Length != 0)
+            {
+                TextBox imageBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("imageBox");
+                imageBox.Text = dlg.FileName;
+            }
+        }
+
         private void BrowseForFolder(object sender, RoutedEventArgs e)
         {
             var dialog = new CommonOpenFileDialog();
@@ -176,8 +192,10 @@ namespace Midi_Analyzer
             //added:
             TextBox excerptBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("excerptBox");
             TextBox modelBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("modelBox");
+            TextBox imageBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("imageBox");
             string excerptCSV = excerptBox.Text;
             string modelMidi = modelBox.Text;
+            string image = imageBox.Text;
 
             string[] sourceFiles = new string[sPath.Items.Count + 1];
             sPath.Items.CopyTo(sourceFiles, 0);
@@ -189,7 +207,7 @@ namespace Midi_Analyzer
             string destinationFolder = destPath.Text;
             Converter converter = new Converter();
             converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
-            analyzer = new Analyzer(sourceFiles, destinationFolder, excerptCSV, modelMidi);
+            analyzer = new Analyzer(sourceFiles, destinationFolder, excerptCSV, modelMidi, image);
             List<string> badSheets = analyzer.AnalyzeCSVFilesStep1();
 
             //Populate next tab with data

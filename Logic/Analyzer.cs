@@ -25,13 +25,15 @@ namespace Midi_Analyzer.Logic
         private string destinationFolder;
         private string excerptCSV;
         private string modelMidi;
+        private string imagePath;
 
-        public Analyzer(string[] sourceFiles, string destinationFolder, string excerptCSV, string modelMidi)
+        public Analyzer(string[] sourceFiles, string destinationFolder, string excerptCSV, string modelMidi, string imagePath)
         {
             this.sourceFiles = sourceFiles;
             this.destinationFolder = destinationFolder;
             this.excerptCSV = excerptCSV;
             this.modelMidi = modelMidi;
+            this.imagePath = imagePath;
 
             var stream = File.OpenText("notes.json");
             string st = stream.ReadToEnd();
@@ -181,7 +183,7 @@ namespace Midi_Analyzer.Logic
                     string timestamp = ConvertMilliToString(milli);
                     treatedSheet.Cells[treatedIndex, 1].Value = workSheet.Cells[workIndex, 1].Value;
                     treatedSheet.Cells[treatedIndex, 2].Value = workSheet.Cells[workIndex, 2].Value;
-                    treatedSheet.Cells[treatedIndex, 3].Value = timestamp;
+                    treatedSheet.Cells[treatedIndex, 3].Value = milli;
                     treatedSheet.Cells[treatedIndex, 4].Value = header;
                     treatedSheet.Cells[treatedIndex, 5].Value = workSheet.Cells[workIndex, 4].Value;//Channels
                     treatedSheet.Cells[treatedIndex, 6].Value = workSheet.Cells[workIndex, 5].Value;//note
@@ -333,10 +335,10 @@ namespace Midi_Analyzer.Logic
 
         public void CreateGraphs()
         {
-            Grapher grapher = new Grapher();
+            Grapher grapher = new Grapher(imagePath);
             int numSamples = analysisPackage.Workbook.Worksheets.Count;
-            grapher.CreateTeacherIOIGraph(analysisPackage, excerptPackage, numSamples);
-            grapher.CreateTeacherVelocityGraph(analysisPackage, excerptPackage, numSamples);
+            //grapher.CreateTeacherIOIGraph(analysisPackage, excerptPackage, numSamples);
+            //grapher.CreateTeacherVelocityGraph(analysisPackage, excerptPackage, numSamples);
             grapher.CreateIOIGraph(analysisPackage, excerptPackage, numSamples);
             grapher.CreateVelocityGraph(analysisPackage, excerptPackage, numSamples);
         }
