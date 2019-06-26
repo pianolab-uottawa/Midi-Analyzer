@@ -128,8 +128,17 @@ namespace Midi_Analyzer.Logic
                 columnIndex += 6;
             }
             graph.Title.Text = "Teacher Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(933, 410);
+            graph.SetSize(994, 410);
+            graph.Legend.Position = eLegendPosition.Top;
             graph.SetPosition(2, 0, columnIndex, 0);
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = "Deviation of IOI (%)";
+            graph.YAxis.Title.Font.Size = 10;
+            graphSheet.Column(columnIndex + 1).Width = 4;
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
@@ -204,8 +213,17 @@ namespace Midi_Analyzer.Logic
                 columnIndex += 6;
             }
             graph.Title.Text = "Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(933, 410);
+            graph.SetSize(994, 410);
+            graph.Legend.Position = eLegendPosition.Top;
             graph.SetPosition(2, 0, columnIndex, 0);
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = "Deviation of IOI (%)";
+            graph.YAxis.Title.Font.Size = 10;
+            graphSheet.Column(columnIndex + 1).Width = 4;
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
@@ -275,9 +293,17 @@ namespace Midi_Analyzer.Logic
                 columnIndex += 6;
             }
             graph.Title.Text = "Dynamics Graph - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(933, 410);
+            graph.SetSize(994, 410);
             graph.SetPosition(2, 0, columnIndex, 0);
-            InsertImageIntoSheet(graphSheet, 23, columnIndex);
+            graph.Legend.Position = eLegendPosition.Top;
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = "Deviation of velocity (%)";
+            graph.YAxis.Title.Font.Size = 10;
+            graphSheet.Column(columnIndex + 1).Width = 4;
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
@@ -377,9 +403,98 @@ namespace Midi_Analyzer.Logic
                 columnIndex += 6;
             }
             graph.Title.Text = "Teacher Dynamic Graph - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(933, 410);
+            graph.SetSize(994, 410);
             graph.SetPosition(2, 0, columnIndex, 0);
-            InsertImageIntoSheet(graphSheet, 23, columnIndex);
+            graph.Legend.Position = eLegendPosition.Top;
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = "Deviation of velocity (%)";
+            graph.YAxis.Title.Font.Size = 10;
+            graphSheet.Column(columnIndex + 1).Width = 4;
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
+            analysisPackage.Save();
+        }
+
+        
+        public void CreateArticulationGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        {
+            ExcelWorksheet treatedSheet = null;
+            ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Articulation");
+            ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
+
+            //Create Header
+            int columnIndex = 1;
+            int markerIndex = 0;
+            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
+            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
+            int seriesIndex = numSamples;
+            int modelArtCol = 4;
+
+            string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
+            for (int i = 1; i <= numSamples; i++)
+            {
+                //Header writing works no problem.
+                treatedSheet = analysisPackage.Workbook.Worksheets[i];
+                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
+                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
+                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
+                graphSheet.Cells[1, columnIndex + 3].Value = "Articulation Deviation (%)";
+
+                //Variables
+                string header = "";
+                int treatedIndex = 2;   //Skip header
+                int graphIndex = 2;     //Skip header
+                int lastValidRow = 2;
+
+                while (header != "end_of_file")
+                {
+                    header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                    {
+
+                        graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 14].Value;
+                        int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
+                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                        lastValidRow = graphIndex;
+                        graphIndex++;
+                    }
+                    else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
+                    {
+                        graphIndex++;
+                    }
+                    treatedIndex++;
+                }
+                //Get the last row of the IOI column:
+                int numRows = graphSheet.Dimension.End.Row;
+
+                string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
+                string artColLetter = ConvertIndexToLetter(columnIndex + 3);
+                string artRange = artColLetter + "2:" + artColLetter + lastValidRow;
+                string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
+                var series = graph.Series.Add(graphSheet.Cells[artRange], graphSheet.Cells[timeRange]);
+                markerIndex = SelectMarker(markerIndex, markerTypes.Length);
+                ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                markerIndex++;
+                Console.WriteLine("SHEET NAME: " + sheetNames[i - 1]);
+                graph.Series[i - 1].Header = sheetNames[i - 1];
+                columnIndex += 6;
+            }
+            graph.Title.Text = "Articulation Graph - " + excerptPackage.File.Name.Split('.')[0];
+            graph.SetSize(994, 410);
+            graph.SetPosition(2, 0, columnIndex, 0);
+            graph.Legend.Position = eLegendPosition.Top;
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = "Articulation (ms)";
+            graph.YAxis.Title.Font.Size = 10;
+            graphSheet.Column(columnIndex + 1).Width = 4;
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
@@ -524,8 +639,18 @@ namespace Midi_Analyzer.Logic
             Image image = Image.FromFile(imagePath);
             var scorePicture = sheet.Drawings.AddPicture("Score", image);
             scorePicture.SetPosition(row, 0, col, 0);
-            int horizontalCoord = scorePicture.
-            scorePicture.SetSize(785, 71);
+            //int horizontalCoord = scorePicture.
+            scorePicture.SetSize(933, 71);
+        }
+
+        /*
+         * What I was planning on doing here is get the position of the scoresheet in pixels. I would then insert lines for each of the sections of the sheet. 
+         */
+        public void InsertLinesIntoSheet(ExcelWorksheet sheet, int row, int col)
+        {
+            var scorePicture = sheet.Drawings["Score"];
+            // sheet.Cells[row, col]
+            //scorePicture.Po
         }
 
         public int CalculateMeanIOIV2(ExcelWorksheet sheet)

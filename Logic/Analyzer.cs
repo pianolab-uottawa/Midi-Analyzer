@@ -106,6 +106,7 @@ namespace Midi_Analyzer.Logic
             for (int j = 1; j <= sourcePackage.Workbook.Worksheets.Count; j++)
             {
                 CreateIOIRowEPP(analysisPackage, j);
+                CreateArticulationRow(analysisPackage, j);
             }
             CreateGraphs();
             analysisPackage.Save();
@@ -165,6 +166,8 @@ namespace Midi_Analyzer.Logic
             treatedSheet.Cells[1, 10].Value = "IOI (Milliseconds)";
             treatedSheet.Cells[1, 11].Value = "Include? (Y/N)";
             treatedSheet.Cells[1, 12].Value = "Line Number";
+            treatedSheet.Cells[1, 13].Value = "Duration";
+            treatedSheet.Cells[1, 14].Value = "Articulation";
             string header = "";
             division = Double.Parse(workSheet.Cells[1, 6].Text);
             int workIndex = 2;
@@ -278,6 +281,54 @@ namespace Midi_Analyzer.Logic
             package.Save();
         }
 
+        public void CreateArticulationRow(ExcelPackage package, int workSheetIndex)
+        {
+            Node[] keys = new Node[128 + 1];
+            for (int i = 1; i < 128 + 1; i++)
+            {
+                keys[i] = new Node();
+            }
+            //get the first worksheet in the workbook
+            ExcelWorksheet treatedSheet = package.Workbook.Worksheets[workSheetIndex];
+            List<Node> notesPlayed = GetListForArticulation(treatedSheet);
+            string header = "";
+            int index = 1;
+            for (int i = 1; i < notesPlayed.Count; i++)
+            {
+                double difference = notesPlayed[i].On_time - notesPlayed[i - 1].Off_time;
+                treatedSheet.Cells[notesPlayed[i-1].Row, 14].Value = CalculateMilliseconds(difference);
+            }
+        }
+
+        public List<Node> GetListForArticulation(ExcelWorksheet treatedSheet)
+        {
+            /*
+             * This method creates a List containing all notes played in the sheet
+             * */
+            List<Node> notesPlayed = new List<Node>();
+            string header = "";
+            int last_note_played = -1;
+            int index = 1;
+            while (header != "end_of_file")
+            {
+                header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
+                if (header == "note_on_c")
+                {
+                    int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                    double on_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                    notesPlayed.Add(new Node(index, on_time, current_note));
+                }
+                else if(header == "note_off_c")
+                {
+                    int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                    int listIndex = notesPlayed.FindLastIndex(node => node.Note == current_note && node.Off_time == 0);
+                    notesPlayed[listIndex].Off_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                }
+                index++;
+            }
+            return notesPlayed;
+        }
+
         public string CreateXLSFile(string csv_path)
         {
             string fileName = csv_path.Split('.')[0];
@@ -341,6 +392,7 @@ namespace Midi_Analyzer.Logic
             //grapher.CreateTeacherVelocityGraph(analysisPackage, excerptPackage, numSamples);
             grapher.CreateIOIGraph(analysisPackage, excerptPackage, numSamples);
             grapher.CreateVelocityGraph(analysisPackage, excerptPackage, numSamples);
+            grapher.CreateArticulationGraph(analysisPackage, excerptPackage, numSamples);
         }
 
         public string ConvertNumToNote(string num)
@@ -487,32 +539,58 @@ namespace Midi_Analyzer.Logic
         public class Node
         {
             int _row;
+            int _note;
             bool _checked;
             double _on_time;
+            double _off_time;
 
             public Node()
             {
+                _note = -1;
                 _row = 0;
                 _on_time = 0;
                 _checked = false;
+                _off_time = 0;
             }
 
             public Node(int row, double on_time)
             {
-                this._row = row;
-                this._on_time = on_time;
+                _row = row;
+                _on_time = on_time;
+            }
+
+            public Node(int row, double on_time, int note)
+            {
+                _row = row;
+                _on_time = on_time;
+                _note = note;
+            }
+
+            public Node(int row, double on_time, double off_time, int note)
+            {
+                _row = row;
+                _on_time = on_time;
+                _off_time = off_time;
+                _note = note;
             }
 
             public void ClearNode()
             {
                 _row = 0;
                 _on_time = 0;
+                _note = -1;
             }
 
             public int Row
             {
                 get { return _row; }
                 set { _row = value; }
+            }
+
+            public int Note
+            {
+                get { return _note; }
+                set { _note = value; }
             }
 
             public bool Checked
@@ -525,6 +603,12 @@ namespace Midi_Analyzer.Logic
             {
                 get { return _on_time; }
                 set { _on_time = value; }
+            }
+
+            public double Off_time
+            {
+                get { return _off_time; }
+                set { _off_time = value; }
             }
         }
     }
