@@ -386,13 +386,11 @@ namespace Midi_Analyzer.Logic
 
         public void CreateGraphs()
         {
-            Grapher grapher = new Grapher(imagePath);
             int numSamples = analysisPackage.Workbook.Worksheets.Count;
-            //grapher.CreateTeacherIOIGraph(analysisPackage, excerptPackage, numSamples);
-            //grapher.CreateTeacherVelocityGraph(analysisPackage, excerptPackage, numSamples);
-            grapher.CreateIOIGraph(analysisPackage, excerptPackage, numSamples);
-            grapher.CreateVelocityGraph(analysisPackage, excerptPackage, numSamples);
-            grapher.CreateArticulationGraph(analysisPackage, excerptPackage, numSamples);
+            Grapher grapher = new Grapher(analysisPackage, excerptPackage, imagePath, numSamples);
+            grapher.CreateIOIGraph();
+            grapher.CreateVelocityGraph();
+            grapher.CreateArticulationGraph();
         }
 
         public string ConvertNumToNote(string num)
