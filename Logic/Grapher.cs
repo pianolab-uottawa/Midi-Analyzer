@@ -10,6 +10,9 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace Midi_Analyzer.Logic
 {
+    /// <summary>
+    /// This class contains all the graphing methods necessary to create graphs into a sheet.
+    /// </summary>
     class Grapher
     {
 
