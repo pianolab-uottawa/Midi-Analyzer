@@ -639,8 +639,8 @@ namespace Midi_Analyzer.Logic
         }
 
         //DEPRECATED METHODS#############################################################################################
-        [Obsolete("CreateIoIRow is deprecated given how slow the excel interop needs to run (approx. 5 mins). Furthermore, it requires that excel be installed" +
-            "on the target machine. Please use CreateIOIRowEPP instead.")]
+        [Obsolete("Please use CreateIOIRowEPP instead. CreateIoIRow is deprecated given how slow the excel interop needs to run (approx. 5 mins) " +
+            "compared to its Epplus counterpart (2 seconds). Furthermore, it requires that excel be installed on the target machine.")]
         public void CreateIoIRow(string csv_path)
         {
             Node[] keys = new Node[128+1];

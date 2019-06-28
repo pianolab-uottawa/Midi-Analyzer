@@ -2,18 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Midi_Analyzer.Logic;
 
@@ -33,13 +24,14 @@ namespace Midi_Analyzer
             sourceFileType = "MIDI";
         }
 
+        /// <summary>
+        /// This method is meant to clear the contents of the source path and array should the user pick a different file type.
+        /// It also checks which radio button is now checked, and assigns that to the sourceFileType variable.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void buttonCheckChange(object sender, RoutedEventArgs e)
         {
-            /*
-             * This method is meant to clear the contents of the source path and array should the user pick a different file type.
-             * It also checks which radio button is now checked, and assigns that to the sourceFileType variable.
-             * */
-            //TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             ListBox path = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             path.Items.Clear();
             RadioButton midiButton = (RadioButton)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("midiButton");
@@ -53,6 +45,11 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Populates the listbox of source files with the selected files from the user. Also opens the dialog to select the data.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void PopulateSourceListbox(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -77,6 +74,11 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Opens a dialog to browse for a file. Enforces the selection of either midi or csv files.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BrowseForFile(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
@@ -98,11 +100,13 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Opens a dialog that can only select .mid files.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BrowseForMidi(object sender, RoutedEventArgs e)
         {
-            /*
-             * Opens a dialog that can only select .mid files.
-             */
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
             dlg.Multiselect = false;
             dlg.Filter = "MIDI files|*.MID;*.MIDI";
@@ -114,11 +118,13 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Opens a dialog that can only select .csv files. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BrowseForCSV(object sender, RoutedEventArgs e)
         {
-            /*
-             * Opens a dialog that can only select .csv files. 
-             */
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
             dlg.Multiselect = true;
             dlg.DefaultExt = ".csv";
@@ -131,11 +137,13 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        ///  Opens a dialog that can only select image files. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BrowseForImage(object sender, RoutedEventArgs e)
         {
-            /*
-             * Opens a dialog that can only select image files. 
-             */
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
             dlg.Multiselect = true;
             dlg.Filter = "Image Files |*.jpg;*.jpeg;*.png;*.bmp";
@@ -147,19 +155,28 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Opens a dialog that only allows the selection of folders.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BrowseForFolder(object sender, RoutedEventArgs e)
         {
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
             CommonFileDialogResult result = dialog.ShowDialog();
-            //var dlg = new System.Windows.Forms.FolderBrowserDialog();
-            //System.Windows.Forms.DialogResult result = dlg.ShowDialog();
             if (result == CommonFileDialogResult.Ok)
             {
                 TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
                 path.Text = dialog.FileName;
             }
         }
+
+        /// <summary>
+        /// Converts the source files into either their csv or midi counterparts. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ConvertFile(object sender, RoutedEventArgs e)
         {
             ListBox sPath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
@@ -168,12 +185,13 @@ namespace Midi_Analyzer
             sPath.Items.CopyTo(sourceFiles, 0);
             string destinationFolder = destPath.Text;
             Converter converter = new Converter();
-            if(sourceFileType == "CSV")
+            
+            if(sourceFileType == "CSV")         //If the source file is a csv, convert it into midi.
             {
                 Console.WriteLine("Running conversion to MIDI...");
                 converter.RunMIDIBatchFile(sourceFiles, destinationFolder);
             }
-            else if(sourceFileType == "MIDI")
+            else if(sourceFileType == "MIDI")   //If the source file is a mid, convert it into csv.
             {
                 Console.WriteLine("Running conversion to CSV...");
                 converter.RunCSVBatchFile(sourceFiles, destinationFolder);
@@ -184,12 +202,18 @@ namespace Midi_Analyzer
             }
         }
 
+        /// <summary>
+        /// Runs the first part of the analysis on the source files.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AnalyzeFile(object sender, RoutedEventArgs e)
         {
+            //Get the source paths and the destination path.
             ListBox sPath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
             TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
 
-            //added:
+            //Get the excerpt file, model and image paths.
             TextBox excerptBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("excerptBox");
             TextBox modelBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("modelBox");
             TextBox imageBox = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("imageBox");
@@ -197,42 +221,52 @@ namespace Midi_Analyzer
             string modelMidi = modelBox.Text;
             string image = imageBox.Text;
 
+            //Make an array of source files.
             string[] sourceFiles = new string[sPath.Items.Count + 1];
             sPath.Items.CopyTo(sourceFiles, 0);
             sourceFiles[sourceFiles.Length - 1] = modelMidi;
-            foreach (string file in sourceFiles)
-            {
-                Console.WriteLine("FILE NAME: " + file);
-            }
             string destinationFolder = destPath.Text;
+
+            //Get the converter and run it on the source files.
             Converter converter = new Converter();
             converter.RunCSVBatchFile(sourceFiles, destinationFolder, false);
+
+            //Run the first part of the analyzer and get the bad files.
             analyzer = new Analyzer(sourceFiles, destinationFolder, excerptCSV, modelMidi, image);
             List<string> badSheets = analyzer.AnalyzeCSVFilesStep1();
 
-            //Populate next tab with data
+            //Populate next tab with the names of the bad sheets.
             ListBox xlsList = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("xlsFileList");
             xlsList.Items.Clear();
             foreach(string name in badSheets)
             {
                 xlsList.Items.Add(name);
             }
+
+            //Switch the focus to the next tab.
             TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "errorDetection").Focus();
         }
 
+        /// <summary>
+        /// Opens the analyzed.xlsx file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OpenFile(object sender, MouseButtonEventArgs e)
         {
-            Console.WriteLine("SENDER TYPE: " + sender.ToString());
-            var list = sender as ListBoxItem;
+            var list = sender as ListBoxItem;   //This is programmed to be called from the listbox of bad sheets.
             TextBox destPath = this.destinationPath;
-            //TextBox destPath = FindResource("destinationPath") as TextBox;
-            //TextBox destPath = (TextBox)(((FrameworkElement)sender).Parent.Parent as FrameworkElement).FindName("destinationPath");
             string file = destPath.Text + "//analyzedFile.xlsx";
 
             Process.Start(@"" + file);
         }
 
+        /// <summary>
+        /// Runs the second part of the analyzer, where the IOI and articulation rows are created, as well as all graphs. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GenerateGraphs(object sender, RoutedEventArgs e)
         {
             analyzer.AnalyzeCSVFilesStep2();
@@ -240,6 +274,11 @@ namespace Midi_Analyzer
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "results").Focus();
         }
 
+        /// <summary>
+        /// Allows the user to delete an item from the sourcepath list box.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DeleteItem(object sender, System.Windows.Input.KeyEventArgs e)
         {
             ListBox sourcePath = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
