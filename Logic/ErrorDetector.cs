@@ -11,64 +11,13 @@ namespace Midi_Analyzer.Logic
     class ErrorDetector
     {
 
-        public void readFile(string xls_path, string reference_path)
-        {
-            /*
-             * DEPRECATED AND INCOMPLETE
-             * This method was originally made to try and detect errors caused by the user playing. However, there were too many ways
-             * a user could possibly make a mistake.
-             * 
-             */
-            FileInfo xlsFile = new FileInfo(xls_path);
-            ExcelPackage midiFile = new ExcelPackage(xlsFile);
-            FileInfo referenceFile = new FileInfo(reference_path);
-            ExcelPackage excerpt = new ExcelPackage(referenceFile);
-
-            //get the first worksheet in the workbook
-            ExcelWorksheet midiSheet = midiFile.Workbook.Worksheets[0];
-            ExcelWorksheet excerptSheet = excerpt.Workbook.Worksheets[0];
-
-            string header = "";
-            string velocity = "";
-            int excerptIndex = 2;
-            int midiIndex = 2;
-            while (header != "end_of_file")
-            {
-                header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
-                velocity = midiSheet.Cells[midiIndex, 6].Text;
-                if (header == "note_on_c" & velocity != "0")
-                {
-                    if(midiSheet.Cells[midiIndex, 5].Text != excerptSheet.Cells[excerptIndex, 5].Text) //This is assuming they're in the same format.
-                    {
-                        //ERROR DETECTED;
-                        //Type 1: User pressed wrong key, continued playing as usual.
-                        if((midiIndex + 3 < midiSheet.Dimension.End.Row) && (excerptIndex + 3 < excerptSheet.Dimension.End.Row)) //Does this work despite the column?
-                        {
-                            if ((midiSheet.Cells[midiIndex + 1, 5].Text == excerptSheet.Cells[excerptIndex + 1, 5].Text) &&
-                            (midiSheet.Cells[midiIndex + 2, 5].Text == excerptSheet.Cells[excerptIndex + 2, 5].Text) &&
-                            (midiSheet.Cells[midiIndex + 3, 5].Text == excerptSheet.Cells[excerptIndex + 3, 5].Text))
-                            {
-                                midiSheet.Row(midiIndex).Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                                midiSheet.Row(midiIndex).Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
-                                midiIndex++;
-                                excerptIndex++;
-                            }
-                            //Type 2: Pianist presses wrong key, restarts from that key
-                            else if((midiSheet.Cells[midiIndex+1, 5].Text == excerptSheet.Cells[excerptIndex, 5].Text) &&
-                                (midiSheet.Cells[midiIndex + 2, 5].Text == excerptSheet.Cells[excerptIndex + 1, 5].Text) &&
-                                (midiSheet.Cells[midiIndex + 3, 5].Text == excerptSheet.Cells[excerptIndex + 2, 5].Text))
-                            {
-                                midiSheet.Row(midiIndex).Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                                midiSheet.Row(midiIndex).Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
-                                midiIndex++;
-                            }
-                        }
-                    }
-                }
-            }
-            excerpt.Save();
-        }
-
+        /// <summary>
+        /// A basic error detection algorithm. It checks if all the notes in the playthrough are correct. Should an error be detected,
+        /// it restarts from the end of the sheet back towards the top. This way, as many correct notes as possible can be detected.
+        /// </summary>
+        /// <param name="midiWb">The workbook to scan for errors.</param>
+        /// <param name="excerptWb">Th workbook containing the excerpt.</param>
+        /// <returns></returns>
         public List<string> ScanWorkbookForErrors(ExcelPackage midiWb, ExcelPackage excerptWb)
         {
             List<string> badSheets = new List<string>();
@@ -87,6 +36,12 @@ namespace Midi_Analyzer.Logic
             return badSheets;
         }
 
+        /// <summary>
+        /// Checks if the note in the midisheet match the excerpt sheet.
+        /// </summary>
+        /// <param name="midiSheet">The sheet of the sample, representing the playthrough.</param>
+        /// <param name="excerptSheet">The excerpt sheet, representing the score.</param>
+        /// <returns></returns>
         public bool DetectGoodPlaythrough(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
         {
             string header = "";
@@ -118,6 +73,12 @@ namespace Midi_Analyzer.Logic
             return true; //No errors found
         }
 
+        /// <summary>
+        /// Checks if the notes in the midisheet match the excerpt sheet, in reverse order.
+        /// </summary>
+        /// <param name="midiSheet">The sheet of the sample, representing the playthrough.</param>
+        /// <param name="excerptSheet">The excerpt sheet, representing the score.</param>
+        /// <returns></returns>
         public bool DetectGoodPlaythroughReversed(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
         {
             string header = "";
@@ -150,12 +111,138 @@ namespace Midi_Analyzer.Logic
             return true; //No errors found (This technically should not be possible.
         }
 
+        /// <summary>
+        /// Convert the entire excel range into an array. Then, scan through the array.
+        /// Should an error be detected, you convert 10 items into one big string. You also group 3 notes into another string.
+        /// Then, you search for the index of the small group inside the big group. 
+        /// </summary>
+        /// <param name="midiSheet">The sheet of the sample, representing the playthrough.</param>
+        /// <param name="excerptSheet">The excerpt sheet, representing the score.</param>
+        /// <returns></returns>
         public bool GroupingDetection(ExcelWorksheet midiSheet, ExcelWorksheet excerptSheet)
         {
-            //Convert the entire excel range into an array. Then, scan through the array.
-            //Should an error be detected, you convert 10 items into one big string. You also group 3 notes into another string.
-            //Then, you search for the index of the small group inside the big group. big yes.
+            List<Node> midiNotes = GetColumnAsList(midiSheet, 7);
+            List<Node> excerptNotes = GetColumnAsList(excerptSheet, 2);
+
+            int midiIndex = 0;
+            int excerptIndex = 0;
+
+            while(excerptIndex < excerptNotes.Count && midiIndex < midiNotes.Count)
+            {
+                //Still in development.
+            }
+
             return false;
+        }
+
+        /// <summary>
+        /// Gets the specified column as a List.
+        /// </summary>
+        /// <param name="sheet">The sheet to get the data from.</param>
+        /// <param name="col">The column to read.</param>
+        /// <returns></returns>
+        public List<Node> GetColumnAsList(ExcelWorksheet sheet, int col)
+        {
+            List<Node> columnList = new List<Node>();
+
+            int lastRow = sheet.Dimension.End.Row;
+            int index = 2; //Skip header.
+
+            //Traverse the sheet.
+            while(index <= lastRow)
+            {
+                if(sheet.Cells[index, col].Value != null)   //If the cell is not empty.
+                {
+                    columnList.Add(new Node(index, sheet.Cells[index, col].Text.Trim().ToUpper()) );  //Add the note to the list.
+                }
+                index++;
+            }
+
+            //Return the list.
+            return columnList;
+        }
+
+        public class Node
+        {
+            private int row;        //The row in the sheet where the note was found.
+            private string note;    //The note value itself.
+
+            public Node(int row, string note)
+            {
+                this.row = row;
+                this.note = note;
+            }
+
+            public int Row
+            {
+                get { return row; }
+                set { row = value; }
+            }
+
+            public string Note
+            {
+                get { return note; }
+                set { note = value; }
+            }
+        }
+
+        //#############################################################################Deprecated and incomplete methods.
+        public void readFile(string xls_path, string reference_path)
+        {
+            /*
+             * DEPRECATED AND INCOMPLETE
+             * This method was originally made to try and detect errors caused by the user playing. However, there were too many ways
+             * a user could possibly make a mistake.
+             * 
+             */
+            FileInfo xlsFile = new FileInfo(xls_path);
+            ExcelPackage midiFile = new ExcelPackage(xlsFile);
+            FileInfo referenceFile = new FileInfo(reference_path);
+            ExcelPackage excerpt = new ExcelPackage(referenceFile);
+
+            //get the first worksheet in the workbook
+            ExcelWorksheet midiSheet = midiFile.Workbook.Worksheets[0];
+            ExcelWorksheet excerptSheet = excerpt.Workbook.Worksheets[0];
+
+            string header = "";
+            string velocity = "";
+            int excerptIndex = 2;
+            int midiIndex = 2;
+            while (header != "end_of_file")
+            {
+                header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
+                velocity = midiSheet.Cells[midiIndex, 6].Text;
+                if (header == "note_on_c" & velocity != "0")
+                {
+                    if (midiSheet.Cells[midiIndex, 5].Text != excerptSheet.Cells[excerptIndex, 5].Text) //This is assuming they're in the same format.
+                    {
+                        //ERROR DETECTED;
+                        //Type 1: User pressed wrong key, continued playing as usual.
+                        if ((midiIndex + 3 < midiSheet.Dimension.End.Row) && (excerptIndex + 3 < excerptSheet.Dimension.End.Row)) //Does this work despite the column?
+                        {
+                            if ((midiSheet.Cells[midiIndex + 1, 5].Text == excerptSheet.Cells[excerptIndex + 1, 5].Text) &&
+                            (midiSheet.Cells[midiIndex + 2, 5].Text == excerptSheet.Cells[excerptIndex + 2, 5].Text) &&
+                            (midiSheet.Cells[midiIndex + 3, 5].Text == excerptSheet.Cells[excerptIndex + 3, 5].Text))
+                            {
+                                midiSheet.Row(midiIndex).Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                midiSheet.Row(midiIndex).Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                                midiIndex++;
+                                excerptIndex++;
+                            }
+                            //Type 2: Pianist presses wrong key, restarts from that key
+                            else if ((midiSheet.Cells[midiIndex + 1, 5].Text == excerptSheet.Cells[excerptIndex, 5].Text) &&
+                                (midiSheet.Cells[midiIndex + 2, 5].Text == excerptSheet.Cells[excerptIndex + 1, 5].Text) &&
+                                (midiSheet.Cells[midiIndex + 3, 5].Text == excerptSheet.Cells[excerptIndex + 2, 5].Text))
+                            {
+                                midiSheet.Row(midiIndex).Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                midiSheet.Row(midiIndex).Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                                midiIndex++;
+                            }
+                        }
+                    }
+                }
+            }
+            excerpt.Save();
         }
     }
 }
