@@ -3,78 +3,86 @@ using OfficeOpenXml.Drawing.Chart;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Excel = Microsoft.Office.Interop.Excel;
 
 namespace Midi_Analyzer.Logic
 {
+    /// <summary>
+    /// This class contains all the graphing methods necessary to create graphs into a sheet.
+    /// </summary>
     class Grapher
     {
 
         private IDictionary<int, string> columnAssignment;
         private string imagePath;
+        private ExcelPackage analysisPackage;
+        private ExcelPackage excerptPackage;
+        private int numSamples;
 
-        public Grapher(string imagePath)
+        public Grapher(ExcelPackage analysisPackage, ExcelPackage excerptPackage, string imagePath, int numSamples)
         {
             columnAssignment = new Dictionary<int, string>();
             InitializeDictionary();
             this.imagePath = imagePath;
+            this.analysisPackage = analysisPackage;
+            this.excerptPackage = excerptPackage;
+            this.numSamples = numSamples;
         }
 
-        /*
-         * This method will compare each individual IOI of each sample with the teacher's IOI for their note. The data points on the graph
-         * represent how much the student's note deviated from their teachers.
-         * 
-         */
-        public void CreateTeacherIOIGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+
+        /// <summary>
+        /// This method will compare each individual IOI of each sample with the model's IOI for their note. The data points on the graph
+        /// represent how much the sample's note deviated from the model's.
+        /// </summary>
+        public void CreateModelIOIGraph()
         {
+            //1. Initialize all the sheets and add the graph to the new sheet.
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Teacher Tone Lengthening");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
-
-            //Create Header
-            int columnIndex = 1;
             ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
+
+            //2. Initalize indexes.
+            int columnIndex = 1;
             int seriesIndex = numSamples;
             int modelIOI = 4;
-            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
             int markerIndex = 0;
 
+            //3. Get the series names, and a list of series markers.
+            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
             string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
 
+            //Get series from each sample's treated sheet.
             for (int i = numSamples; i > 0; i--)
             {
-                //Header writing works no problem.
+                //Get corresponding sheet and write header. 
                 treatedSheet = analysisPackage.Workbook.Worksheets[i];
-                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
-                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
-                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
-                graphSheet.Cells[1, columnIndex + 3].Value = "IOI Deviation (%)";
-                graphSheet.Cells[1, columnIndex + 4].Value = "Spacing";
+                WriteHeader(graphSheet, treatedSheet.Name, columnIndex, "IOI Deviation (%)");
 
+                //Set variables and indexes for sheet traversal.
                 string header = "";
                 int treatedIndex = 2;   //Skip header
                 int graphIndex = 2;     //Skip header
-                int lastValidRow = 2;
+                int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
-                if (i == seriesIndex) //This is the model
+                if (i == seriesIndex) //This is the model. We don't calculate deviation here.
                 {
                     while (header != "end_of_file")
                     {
                         header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                        //Note is included
                         if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y" ||
                             treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == ""))
                         {
+                            //Write values from treated sheet into graph sheet. 
                             graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 10].Value;
                             int lineNumber = Int32.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
-                            graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                            graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;  //Write spacing from excerpt.
                             lastValidRow = graphIndex;
                             graphIndex++;
                         }
+                        //Note was played, but excluded.
                         else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                         {
                             graphIndex++;
@@ -82,22 +90,23 @@ namespace Midi_Analyzer.Logic
                         treatedIndex++;
                     }
                 }
-                else       //These are the samples
+                else       //These are the samples. These will be compared to the model found above.
                 {
                     while (header != "end_of_file")
                     {
                         header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                        //Note is included.
                         if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y" ||
                             treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == ""))
                         {
                             
                             graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
-                            if (graphSheet.Cells[graphIndex, modelIOI].Value != null)
+                            if (graphSheet.Cells[graphIndex, modelIOI].Value != null)       //Ensures the data gotten from the treated sheet wasn't empty/null.
                             {
-                                //graphSheet.Cells[graphIndex, columnIndex + 3].Style.Numberformat.Format = "#0.00%";
+                                //Calculate IOI deviation and assign it.
                                 double ioiDeviation = CalculateIOIDeviation((double)(graphSheet.Cells[graphIndex, modelIOI].Value),
-                                                                                                            (double)(treatedSheet.Cells[treatedIndex, 10].Value)); //IOI
+                                                                                                            (double)(treatedSheet.Cells[treatedIndex, 10].Value));
                                 graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(ioiDeviation, 2);
                             }
                             int lineNumber = Int32.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
@@ -105,252 +114,219 @@ namespace Midi_Analyzer.Logic
                             lastValidRow = graphIndex;
                             graphIndex++;
                         }
+                        //Note was played, but it was excluded.
                         else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                         {
                             graphIndex++;
                         }
                         treatedIndex++;
                     }
-                    //Get the last row of the IOI column:
-                    int numRows = graphSheet.Dimension.End.Row;
-
-                    string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
-                    string ioiColLetter = ConvertIndexToLetter(columnIndex + 3);
-                    string ioiRange = ioiColLetter + "2:" + ioiColLetter + lastValidRow;
-                    string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
-                    var series = graph.Series.Add(graphSheet.Cells[ioiRange], graphSheet.Cells[timeRange]);
-                    graph.Series[seriesIndex - i - 1].Header = sheetNames[seriesIndex - i - 1];
-                    graph.DisplayBlanksAs = eDisplayBlanksAs.Span;
-                    markerIndex = SelectMarker(markerIndex, markerTypes.Length);
-                    ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                    //Create and add series to the graph.
+                    CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
                     markerIndex++;
                 }
                 columnIndex += 6;
             }
-            graph.Title.Text = "Teacher Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(994, 410);
-            graph.Legend.Position = eLegendPosition.Top;
-            graph.SetPosition(2, 0, columnIndex, 0);
-            graph.XAxis.Fill.Style = eFillStyle.NoFill;
-            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
-            graph.XAxis.MajorTickMark = eAxisTickMark.None;
-            graph.XAxis.MinorTickMark = eAxisTickMark.None;
-            graph.YAxis.Title.Text = "Deviation of IOI (%)";
-            graph.YAxis.Title.Font.Size = 10;
-            graphSheet.Column(columnIndex + 1).Width = 4;
+            //Finalize graph and save.
+            string title = "Teacher Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
+            string yLabel = "Deviation of IOI (%)";
+            SetGraphProperties(graph, title, columnIndex, yLabel);
             InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
-
-        /*
-        * This method will compare the IOIs of each note with the mean IOI of the same sample, then graph the deviation.
-        * 
-        */
-        public void CreateIOIGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        
+        /// <summary>
+        /// This method will compare the IOIs of each note with the mean IOI of the same sample, then graph the deviation.
+        /// </summary>
+        public void CreateIOIGraph()
         {
+            //1. Initialize all the sheets and add the graph to the new sheet.
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Tone Lengthening");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
+            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
 
-            //Create Header
+            //2. Initalize indexes.
             int columnIndex = 1;
             int markerIndex = 0;
-            string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
 
+            //3. Get the series names, and a list of series markers.
+            string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
             Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
-            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
+
+            //Get series from each sample's treated sheet. 
             for (int i = 1; i <= numSamples; i++)
             {
-                //Header writing works no problem.
+                //Get corresponding sheet and write header. 
                 treatedSheet = analysisPackage.Workbook.Worksheets[i];
-                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
-                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
-                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
-                graphSheet.Cells[1, columnIndex + 3].Value = "IOI (Milliseconds)";
+                WriteHeader(graphSheet, treatedSheet.Name, columnIndex, "IOI (milliseconds)");
 
-                //Variables
+                //Calculate mean and set variables and indexes for sheet traversal.
                 double meanIOI = CalculateMeanIOI(treatedSheet);
-                graphSheet.Cells[1, columnIndex + 4].Value = meanIOI;
+                graphSheet.Cells[1, columnIndex + 5].Value = meanIOI;
                 string header = "";
                 int treatedIndex = 2;   //Skip header
                 int graphIndex = 2;     //Skip header
-                int lastValidRow = 2;
+                int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
                 while (header != "end_of_file")
                 {
                     header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
-                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))   //Include note.
                     {
-
                         graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                         graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
                         int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
                         double ioiDeviation = CalculateMeanIOIDeviation(meanIOI, (double)(treatedSheet.Cells[treatedIndex, 10].Value), 
-                                                                        (double)excerptSheet.Cells[lineNumber + 1, 4].Value);
-                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(ioiDeviation, 2);
-                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                                                                        (double)excerptSheet.Cells[lineNumber + 1, 4].Value);       //Calculate IOI deviation
+                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(ioiDeviation, 2);                          //Assign deviation
+                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;          //Write Spacing from excerpt.
                         lastValidRow = graphIndex;
                         graphIndex++;
                     }
+                    //Note was played, but it was excluded.
                     else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                     {
                         graphIndex++;
                     }
                     treatedIndex++;
                 }
-                //Get the last row of the IOI column:
-                int numRows = graphSheet.Dimension.End.Row;
-
-                string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
-                string ioiColLetter = ConvertIndexToLetter(columnIndex + 3);
-                string ioiRange = ioiColLetter + "2:" + ioiColLetter + lastValidRow;
-                string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
-                var series = graph.Series.Add(graphSheet.Cells[ioiRange], graphSheet.Cells[timeRange]);
-                markerIndex = SelectMarker(markerIndex, markerTypes.Length);
-                ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                //Create the series and add it to the graph.
+                CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
                 graph.Series[i - 1].Header = sheetNames[i - 1];
                 markerIndex++;
-                columnIndex += 6;
+                columnIndex += 7;
             }
-            graph.Title.Text = "Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(994, 410);
-            graph.Legend.Position = eLegendPosition.Top;
-            graph.SetPosition(2, 0, columnIndex, 0);
-            graph.XAxis.Fill.Style = eFillStyle.NoFill;
-            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
-            graph.XAxis.MajorTickMark = eAxisTickMark.None;
-            graph.XAxis.MinorTickMark = eAxisTickMark.None;
-            graph.YAxis.Title.Text = "Deviation of IOI (%)";
-            graph.YAxis.Title.Font.Size = 10;
-            graphSheet.Column(columnIndex + 1).Width = 4;
+            //Finalize graph and save.
+            string title = "Tone Lengthening - "+excerptPackage.File.Name.Split('.')[0];
+            string yLabel = "Deviation of IOI (%)";
+            SetGraphProperties(graph, title, columnIndex, yLabel);
             InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
-        public void CreateVelocityGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        /// <summary>
+        /// This method will compare the velocities of each note with the mean velocity of the same sample, then graph the deviation.
+        /// </summary>
+        public void CreateVelocityGraph()
         {
+            //1. Initialize all the sheets and add the graph to the new sheet.
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Dynamics");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
+            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
 
-            //Create Header
+            //2. Initalize indexes.
             int columnIndex = 1;
             int markerIndex = 0;
+
+            //3. Get the series names, and a list of series markers.
             string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
             Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
-            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
+
+            //Get series from each sample's treated sheet.
             for (int i = 1; i <= numSamples; i++)
             {
-                //Header writing works no problem.
+                //Get corresponding sheet and write header. 
                 treatedSheet = analysisPackage.Workbook.Worksheets[i];
-                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
-                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
-                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
-                graphSheet.Cells[1, columnIndex + 3].Value = "Velocity Deviation (%)";
+                WriteHeader(graphSheet, treatedSheet.Name, columnIndex, "Velocity Deviation (%)");
 
-                //Variables
+                //Calculate mean and set variables and indexes for sheet traversal.
                 double meanVel = CalculateMeanVelocity(treatedSheet);
                 graphSheet.Cells[1, columnIndex + 4].Value = meanVel;
                 string header = "";
                 int treatedIndex = 2;   //Skip header
                 int graphIndex = 2;     //Skip header
-                int lastValidRow = 2;
+                int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
                 while (header != "end_of_file")
                 {
                     header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
-                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))   //Include note
                     {
 
                         graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                         graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
                         int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
-                        double velDeviation = CalculateMeanVelDeviation(meanVel, (double)(treatedSheet.Cells[treatedIndex, 8].Value));
-                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(velDeviation, 2);
-                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                        double velDeviation = CalculateMeanVelDeviation(meanVel, (double)(treatedSheet.Cells[treatedIndex, 8].Value));  //Calculate velocity deviation
+                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(velDeviation, 2);                              //Assign deviation into sheet
+                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;              //Write spacing from excerpt.
                         lastValidRow = graphIndex;
                         graphIndex++;
                     }
+                    //Note was played, but excluded.
                     else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                     {
                         graphIndex++;
                     }
                     treatedIndex++;
                 }
-                //Get the last row of the IOI column:
-                int numRows = graphSheet.Dimension.End.Row;
-
-                string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
-                string velColLetter = ConvertIndexToLetter(columnIndex + 3);
-                string velRange = velColLetter + "2:" + velColLetter + lastValidRow;
-                string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
-                var series = graph.Series.Add(graphSheet.Cells[velRange], graphSheet.Cells[timeRange]);
-                markerIndex = SelectMarker(markerIndex, markerTypes.Length);
-                ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                //Create and add series to the graph.
+                CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
                 markerIndex++;
-                Console.WriteLine("SHEET NAME: " + sheetNames[i - 1]);
                 graph.Series[i - 1].Header = sheetNames[i - 1];
                 columnIndex += 6;
             }
-            graph.Title.Text = "Dynamics Graph - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(994, 410);
-            graph.SetPosition(2, 0, columnIndex, 0);
-            graph.Legend.Position = eLegendPosition.Top;
-            graph.XAxis.Fill.Style = eFillStyle.NoFill;
-            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
-            graph.XAxis.MajorTickMark = eAxisTickMark.None;
-            graph.XAxis.MinorTickMark = eAxisTickMark.None;
-            graph.YAxis.Title.Text = "Deviation of velocity (%)";
-            graph.YAxis.Title.Font.Size = 10;
-            graphSheet.Column(columnIndex + 1).Width = 4;
+            //Finalize graph and save the package.
+            string title = "Dynamics - " + excerptPackage.File.Name.Split('.')[0];
+            string yLabel = "Deviation of velocity (%)";
+            SetGraphProperties(graph, title, columnIndex, yLabel);
             InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
-        public void CreateTeacherVelocityGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        /// <summary>
+        /// This method will compare each individual velocity of each sample with the model's velocity for their note. The data points on the graph
+        /// represent how much the sample's note deviated from the model's.
+        /// </summary>
+        public void CreateModelVelocityGraph()
         {
+            //1. Initialize all the sheets and add the graph to the new sheet.
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Teacher Dynamics Graph");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
+            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
 
-            //Create Header
+            //2. Initalize indexes.
             int columnIndex = 1;
             int markerIndex = 0;
-            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
-            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
             int seriesIndex = numSamples;
             int modelVelCol = 4;
 
+            //3. Get the series names, and a list of series markers.
             string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
+            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
+
+            //Get series from each sample's treated sheet.
             for (int i = numSamples; i > 0; i--)
             {
-                //Header writing works no problem.
+                //Get corresponding sheet and write header. 
                 treatedSheet = analysisPackage.Workbook.Worksheets[i];
-                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
-                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
-                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
-                graphSheet.Cells[1, columnIndex + 3].Value = "Velocity";
+                WriteHeader(graphSheet, treatedSheet.Name, columnIndex, "Velocity");
 
+                //Set variables and indexes for sheet traversal.
                 string header = "";
                 int treatedIndex = 2;   //Skip header
                 int graphIndex = 2;     //Skip header
-                int lastValidRow = 2;
+                int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
-                if (i == seriesIndex) //This is the model
+                if (i == seriesIndex)   //This is the model
                 {
                     while (header != "end_of_file")
                     {
                         header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
-                        if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                        if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))       //Include note.
                         {
+                            //Write model values from treated sheet into graph sheet. 
                             graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 8].Value;
                             int lineNumber = Int32.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
-                            graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                            graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;  //Write spacing from excerpt.
                             lastValidRow = graphIndex;
                             graphIndex++;
                         }
+                        //Note was played, but excluded.
                         else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                         {
                             graphIndex++;
@@ -358,22 +334,23 @@ namespace Midi_Analyzer.Logic
                         treatedIndex++;
                     }
                 }
-                else       //These are the samples
+                else       //These are the samples. These will be compared to the model found above.
                 {
                     while (header != "end_of_file")
                     {
                         header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
+                        //Note is included.
                         if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y" ||
                             treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == ""))
                         {
 
                             graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
                             graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
-                            if (graphSheet.Cells[graphIndex, modelVelCol].Value != null)
+                            if (graphSheet.Cells[graphIndex, modelVelCol].Value != null)                //Ensures the data gotten from the treated sheet wasn't empty/null.
                             {
-                                //graphSheet.Cells[graphIndex, columnIndex + 3].Style.Numberformat.Format = "#0.00%";
+                                //Calculate velocity deviation and assign it.
                                 double velDeviation = CalculateVelDeviation((double)(graphSheet.Cells[graphIndex, modelVelCol].Value),
-                                                                                                            (double)(treatedSheet.Cells[treatedIndex, 8].Value)); //IOI
+                                                                                                            (double)(treatedSheet.Cells[treatedIndex, 8].Value));
                                 graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(velDeviation, 2);
                             }
                             int lineNumber = Int32.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
@@ -381,123 +358,163 @@ namespace Midi_Analyzer.Logic
                             lastValidRow = graphIndex;
                             graphIndex++;
                         }
+                        //Note was played, but it was excluded.
                         else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                         {
                             graphIndex++;
                         }
                         treatedIndex++;
                     }
-                    //Get the last row of the IOI column:
-                    int numRows = graphSheet.Dimension.End.Row;
-
-                    string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
-                    string velColLetter = ConvertIndexToLetter(columnIndex + 3);
-                    string velRange = velColLetter + "2:" + velColLetter + lastValidRow;
-                    string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
-                    var series = graph.Series.Add(graphSheet.Cells[velRange], graphSheet.Cells[timeRange]);
-                    markerIndex = SelectMarker(markerIndex, markerTypes.Length);
-                    ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                    //Create and add series to the graph.
+                    CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
                     markerIndex++;
                     graph.Series[seriesIndex - i - 1].Header = sheetNames[seriesIndex - i - 1];
                 }
                 columnIndex += 6;
             }
-            graph.Title.Text = "Teacher Dynamic Graph - "+excerptPackage.File.Name.Split('.')[0];
-            graph.SetSize(994, 410);
-            graph.SetPosition(2, 0, columnIndex, 0);
-            graph.Legend.Position = eLegendPosition.Top;
-            graph.XAxis.Fill.Style = eFillStyle.NoFill;
-            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
-            graph.XAxis.MajorTickMark = eAxisTickMark.None;
-            graph.XAxis.MinorTickMark = eAxisTickMark.None;
-            graph.YAxis.Title.Text = "Deviation of velocity (%)";
-            graph.YAxis.Title.Font.Size = 10;
-            graphSheet.Column(columnIndex + 1).Width = 4;
+            //Finalize graph and save.
+            string title = "Teacher Dynamic Graph - "+excerptPackage.File.Name.Split('.')[0];
+            string yLabel = "Deviation of velocity (%)";
+            SetGraphProperties(graph, title, columnIndex, yLabel);
             InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
             analysisPackage.Save();
         }
 
-        
-        public void CreateArticulationGraph(ExcelPackage analysisPackage, ExcelPackage excerptPackage, int numSamples)
+        /// <summary>
+        /// This method will graph the time between each note being played (articulation). No deviation calculation are done here.
+        /// </summary>
+        public void CreateArticulationGraph()
         {
+            //1. Initialize all the sheets and add the graph to the new sheet.
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Articulation");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
+            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
 
-            //Create Header
+            //2. Initalize indexes.
             int columnIndex = 1;
             int markerIndex = 0;
-            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
-            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
             int seriesIndex = numSamples;
             int modelArtCol = 4;
 
+            //3. Get the series names, and a list of series markers.
             string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
+
+            //Get series from each sample's treated sheet.
             for (int i = 1; i <= numSamples; i++)
             {
-                //Header writing works no problem.
+                //Get corresponding sheet and write header. 
                 treatedSheet = analysisPackage.Workbook.Worksheets[i];
-                graphSheet.Cells[1, columnIndex].Value = treatedSheet.Name;
-                graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
-                graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
-                graphSheet.Cells[1, columnIndex + 3].Value = "Articulation Deviation (%)";
+                WriteHeader(graphSheet, treatedSheet.Name, columnIndex, "Time between notes (ms)");
 
-                //Variables
+                //Set variables and indexes for sheet traversal.
                 string header = "";
                 int treatedIndex = 2;   //Skip header
                 int graphIndex = 2;     //Skip header
-                int lastValidRow = 2;
+                int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
                 while (header != "end_of_file")
                 {
                     header = treatedSheet.Cells[treatedIndex, 4].Text.Trim().ToLower();
-                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))
+                    if (header == "note_on_c" && (treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "y"))       //Note is included.
                     {
-
-                        graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 1].Value = treatedSheet.Cells[treatedIndex, 12].Value;   
                         graphSheet.Cells[graphIndex, columnIndex + 2].Value = treatedSheet.Cells[treatedIndex, 3].Value;
-                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 14].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 3].Value = treatedSheet.Cells[treatedIndex, 14].Value;   //Assign articulation into sheet
                         int lineNumber = int.Parse(treatedSheet.Cells[treatedIndex, 12].Text);
-                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;
+                        graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;  //Write spacing from excerpt.
                         lastValidRow = graphIndex;
                         graphIndex++;
                     }
+                    //Note was played, but excluded.
                     else if (header == "note_on_c" && treatedSheet.Cells[treatedIndex, 11].Text.Trim().ToLower() == "n")
                     {
                         graphIndex++;
                     }
                     treatedIndex++;
                 }
-                //Get the last row of the IOI column:
-                int numRows = graphSheet.Dimension.End.Row;
-
-                string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
-                string artColLetter = ConvertIndexToLetter(columnIndex + 3);
-                string artRange = artColLetter + "2:" + artColLetter + lastValidRow;
-                string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
-                var series = graph.Series.Add(graphSheet.Cells[artRange], graphSheet.Cells[timeRange]);
-                markerIndex = SelectMarker(markerIndex, markerTypes.Length);
-                ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+                //Create and add series to the graph.
+                CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
                 markerIndex++;
-                Console.WriteLine("SHEET NAME: " + sheetNames[i - 1]);
                 graph.Series[i - 1].Header = sheetNames[i - 1];
                 columnIndex += 6;
             }
-            graph.Title.Text = "Articulation Graph - " + excerptPackage.File.Name.Split('.')[0];
+            //Finalize graph and save.
+            string title = "Articulation - " + excerptPackage.File.Name.Split('.')[0];
+            string yLabel = "Time between notes (ms)";
+            SetGraphProperties(graph, title, columnIndex, yLabel);
+            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
+            analysisPackage.Save();
+        }
+
+        /// <summary>
+        /// Writes the header into the graphsheet.
+        /// </summary>
+        /// <param name="graphSheet">The excel sheet containing the graph and data.</param>
+        /// <param name="sheetName">The name of the sheet (hence, the sample) that represents the current columns.</param>
+        /// <param name="columnIndex">Specifies which column we're currently at.</param>
+        /// <param name="variableName">The variable that we'll be writing to the column.</param>
+        public void WriteHeader(ExcelWorksheet graphSheet, string sheetName, int columnIndex, string variableName)
+        {
+            graphSheet.Cells[1, columnIndex].Value = sheetName;
+            graphSheet.Cells[1, columnIndex + 1].Value = "Line Number";
+            graphSheet.Cells[1, columnIndex + 2].Value = "Timestamp";
+            graphSheet.Cells[1, columnIndex + 3].Value = variableName;
+            graphSheet.Cells[1, columnIndex + 4].Value = "Spacing";
+        }
+
+        /// <summary>
+        /// Creates a series from a column variable and adds it to the supplied graph.
+        /// </summary>
+        /// <param name="graphSheet">The excel sheet containing the graph and data.</param>
+        /// <param name="graph">The graph to add the series to.</param>
+        /// <param name="columnIndex">Specifies which column we're currently at.</param>
+        /// <param name="lastValidRow">The last row to include in our series.</param>
+        /// <param name="markerIndex">The current marker index to get from the marker types enum.</param>
+        public void CreateAndAddSeries(ExcelWorksheet graphSheet, ExcelChart graph, int columnIndex, int lastValidRow, int markerIndex)
+        {
+            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
+            string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
+            string varColLetter = ConvertIndexToLetter(columnIndex + 3);
+            string varRange = varColLetter + "2:" + varColLetter + lastValidRow;
+            string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
+            var series = graph.Series.Add(graphSheet.Cells[varRange], graphSheet.Cells[timeRange]);
+            markerIndex = SelectMarker(markerIndex, markerTypes.Length);
+            ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+        }
+
+        /// <summary>
+        /// Sets all the graph properties. 
+        /// </summary>
+        /// <param name="graph">The graph to modify the properties of.</param>
+        /// <param name="title">The name to assign to the graph.</param>
+        /// <param name="column">The column to set the graph at.</param>
+        /// <param name="yLabel">The name to assign to the y-axis.</param>
+        public void SetGraphProperties(ExcelChart graph, string title, int column, string yLabel)
+        {
+            graph.Title.Text = title;
             graph.SetSize(994, 410);
-            graph.SetPosition(2, 0, columnIndex, 0);
+            graph.SetPosition(2, 0, column, 0);
             graph.Legend.Position = eLegendPosition.Top;
             graph.XAxis.Fill.Style = eFillStyle.NoFill;
             graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
             graph.XAxis.MajorTickMark = eAxisTickMark.None;
             graph.XAxis.MinorTickMark = eAxisTickMark.None;
-            graph.YAxis.Title.Text = "Articulation (ms)";
+            graph.YAxis.Title.Text = yLabel;
             graph.YAxis.Title.Font.Size = 10;
-            graphSheet.Column(columnIndex + 1).Width = 4;
-            InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
-            analysisPackage.Save();
         }
 
+        /// <summary>
+        /// Calculates the deviation of the sample IOI from the mean IOI.
+        /// </summary>
+        /// <param name="meanIOI">The mean IOI to compare to.</param>
+        /// <param name="sampleIOI">The sample IOI that will be compared.</param>
+        /// <param name="noteLength">
+        /// The original duration of the note (quarter note, eighth note, etc). Possible values include 0.25, 0.125, 0.0625.
+        /// </param>
+        /// <returns>
+        /// The deviation of the sampleIOI from the meanIOI, in %.
+        /// </returns>
         public double CalculateMeanIOIDeviation(double meanIOI, double sampleIOI, double noteLength)
         {
             if (sampleIOI != meanIOI)
@@ -512,6 +529,14 @@ namespace Midi_Analyzer.Logic
             }
         }
 
+        /// <summary>
+        /// Calculates the deviation of the sampleIOI value from the modelIOI value (no mean here).
+        /// </summary>
+        /// <param name="modelIOI">The model IOI to compare to.</param>
+        /// <param name="sampleIOI">The sample IOI that will be compared.</param>
+        /// <returns>
+        /// The deviation of the sampleIOI from the modelIOI, in %.
+        /// </returns>
         public double CalculateIOIDeviation(double modelIOI, double sampleIOI)
         {
             if(sampleIOI != modelIOI)
@@ -525,9 +550,13 @@ namespace Midi_Analyzer.Logic
             }
         }
 
-        /*
-         * This method calculates the mean IOI of a given worksheet (The worksheet MUST be in the format generated by the tool)! 
-         */
+        /// <summary>
+        /// Calculates the mean IOI.
+        /// </summary>
+        /// <param name="analyzedSheet">The worksheet from which the meanIOI will be calculated.</param>
+        /// <returns>
+        /// The mean IOI of the sheet, in ms.
+        /// </returns>
         public double CalculateMeanIOI(ExcelWorksheet analyzedSheet)
         {
             int index = 2;
@@ -546,6 +575,14 @@ namespace Midi_Analyzer.Logic
             return totalIOI / totalBeats;
         }
 
+        /// <summary>
+        /// Calculates the mean velocity deviation of the sample velocity from the mean velocity.
+        /// </summary>
+        /// <param name="meanVel">The mean velocity to compare to.</param>
+        /// <param name="sampleVel">The sample velocity that will be compared.</param>
+        /// <returns>
+        /// The deviation of the sampleIOI from the meanIOI, in %.
+        /// </returns>
         public double CalculateMeanVelDeviation(double meanVel, double sampleVel)
         {
             if (sampleVel != meanVel)
@@ -559,6 +596,13 @@ namespace Midi_Analyzer.Logic
             }
         }
 
+        /// <summary>
+        /// Calculates the mean velocity.
+        /// </summary>
+        /// <param name="analyzedSheet">The worksheet from which the mean velocity will be calculated.</param>
+        /// <returns>
+        /// The mean velocity of the sheet.
+        /// </returns>
         public double CalculateMeanVelocity(ExcelWorksheet analyzedSheet)
         {
             int index = 2;
@@ -578,6 +622,14 @@ namespace Midi_Analyzer.Logic
             return totalVel / numNotes;
         }
 
+        /// <summary>
+        /// Calculates the deviation of the sample velocity value from the model velocity value (no mean here).
+        /// </summary>
+        /// <param name="modelVel">The model velocity to compare to.</param>
+        /// <param name="sampleVel">The sample velocity that will be compared.</param>
+        /// <returns>
+        /// The deviation of the sample velocity from the model velocity, in %.
+        /// </returns>
         public double CalculateVelDeviation(double modelVel, double sampleVel)
         {
             if (sampleVel != modelVel)
@@ -591,6 +643,14 @@ namespace Midi_Analyzer.Logic
             }
         }
 
+        /// <summary>
+        /// Used to select a marker for the series. Avoid markers deemed illegible or hard to read. 
+        /// </summary>
+        /// <param name="markerIndex">The current index the program is at.</param>
+        /// <param name="limit">The total number of markers available to use.</param>
+        /// <returns>
+        /// The current value of markerIndex.
+        /// </returns>
         public int SelectMarker(int markerIndex, int limit)
         {
             while (markerIndex == 1 || markerIndex == 3 || markerIndex == 4 || markerIndex == 5 || markerIndex == 6 || markerIndex == 10)
@@ -604,6 +664,15 @@ namespace Midi_Analyzer.Logic
             return markerIndex;
         }
 
+        /// <summary>
+        /// Generates a list of names for the series from the given package. It uses the given number of samples to only read them.
+        /// It generates the names by reading each sheet's name.
+        /// </summary>
+        /// <param name="package">The pakcage to generate the names from.</param>
+        /// <param name="numSamples">The number of samples that were generated.</param>
+        /// <returns>
+        /// An array of strings containing the package names.
+        /// </returns>
         public string[] CreateSeriesNames(ExcelPackage package, int numSamples)
         {
             string[] names = new string[numSamples];
@@ -634,8 +703,15 @@ namespace Midi_Analyzer.Logic
             return names;
         }
 
+        /// <summary>
+        /// Inserts an image from the global variable into the sheet at a specified row and column value.
+        /// </summary>
+        /// <param name="sheet">The work sheet to insert the image into.</param>
+        /// <param name="row">The row where to insert the image.</param>
+        /// <param name="col">The column where to insert the image.</param>
         public void InsertImageIntoSheet(ExcelWorksheet sheet, int row, int col)
         {
+            sheet.Column(col).Width = 4;               //This is to line up the image with the graph as much as possible.
             Image image = Image.FromFile(imagePath);
             var scorePicture = sheet.Drawings.AddPicture("Score", image);
             scorePicture.SetPosition(row, 0, col, 0);
@@ -643,67 +719,22 @@ namespace Midi_Analyzer.Logic
             scorePicture.SetSize(933, 71);
         }
 
-        /*
-         * What I was planning on doing here is get the position of the scoresheet in pixels. I would then insert lines for each of the sections of the sheet. 
-         */
-        public void InsertLinesIntoSheet(ExcelWorksheet sheet, int row, int col)
-        {
-            var scorePicture = sheet.Drawings["Score"];
-            // sheet.Cells[row, col]
-            //scorePicture.Po
-        }
-
-        public int CalculateMeanIOIV2(ExcelWorksheet sheet)
-        {
-            double totalBeats = CalculateTotalBeats(sheet);
-            int index = sheet.Dimension.End.Row;
-            int firstY = -1;             //Represents the row on which we detected a Y.
-            int lastN = -1;              //Represents the row on which we detected an N.
-            string noteOffLetter = "";
-            int noteOffY = -1;
-            string header = "";
-            while(firstY == -1 && index != 0)
-            {
-                header = sheet.Cells[index, 4].Text.Trim().ToLower();
-                if(header == "note_on_c")
-                {
-                    if(sheet.Cells[index, 11].Text.Trim().ToLower() == "y")
-                    {
-                        firstY = index;
-                        if(sheet.Cells[index, 7].Text.Trim().ToLower() == sheet.Cells[noteOffY, 7].Text.Trim().ToLower())
-                        {
-                            //Here, you're supposed to match both the notes. The problem is there may have been multiple note_off_c's,
-                            //so if they don't match, you'd have to retroactively search for the matching note_off. 
-                        }
-                        break;
-                    }
-                    else if(sheet.Cells[index, 11].Text.Trim().ToLower() == "n")
-                    {
-                        lastN = index;
-                    }
-                }
-                else if (header == "note_off_c")
-                {
-                    noteOffY = index;
-                }
-                index--;
-            }
-            if(lastN == -1)
-            {
-
-            }
-            return -1;
-        }
-
+        /// <summary>
+        /// Calculates the total number of beats in the sample.
+        /// </summary>
+        /// <param name="analyzedSheet">The work sheet to read from and calculate beats.</param>
+        /// <returns>
+        /// The total number of beats in the sheet.
+        /// </returns>
         public double CalculateTotalBeats(ExcelWorksheet analyzedSheet)
         {
             double totalBeats = 0.0;
-            int index = 2;
+            int index = 2;      //Skip the header.
             string header = analyzedSheet.Cells[index, 4].Text.Trim().ToLower();
             while (header != "end_of_file")
             {
                 header = analyzedSheet.Cells[index, 4].Text.Trim().ToLower();
-                if(analyzedSheet.Cells[index, 11].Text.Trim().ToLower() == "y")
+                if(analyzedSheet.Cells[index, 11].Text.Trim().ToLower() == "y")     //If the note is included, add the beat.
                 {
                     totalBeats += (double)(analyzedSheet.Cells[index, 13].Value);
                 }
@@ -712,6 +743,13 @@ namespace Midi_Analyzer.Logic
             return totalBeats * 4; //This is to scale it from quarter notes.
         }
 
+        /// <summary>
+        /// Converts a number index into a letter that would be used for getting excel ranges.
+        /// </summary>
+        /// <param name="index">The number index of the column.</param>
+        /// <returns>
+        /// The equivalent letter of the column index as a string.
+        /// </returns>
         public string ConvertIndexToLetter(int index)
         {
             if(index < 27)  //There is only one leader in the column ID.
@@ -720,13 +758,16 @@ namespace Midi_Analyzer.Logic
             }
             else
             {
-                int firstLetter = index / 26;
-                int secondLetter = index % 26;
+                int firstLetter = index / 26;   //The first letter is the quotient of the division, should the index be larger than 26.
+                int secondLetter = index % 26;  //The second letter is the remainder of the division, should the index be larger than 26.
                 string word = columnAssignment[firstLetter] + columnAssignment[secondLetter];
                 return word;
             }
         }
 
+        /// <summary>
+        /// Initializes the global variable dictionary to contain the number and letter equivalencies for the alphabet.
+        /// </summary>
         public void InitializeDictionary()
         {
             columnAssignment.Add(1, "A");
