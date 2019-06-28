@@ -12,6 +12,8 @@ namespace Midi_Analyzer.Logic
     class Analyzer
     {
 
+        private readonly int FROZEN_ROWS = 10;
+
         private double tempo = -1;
         private double division = -1;
         private JObject notes;
@@ -156,7 +158,7 @@ namespace Midi_Analyzer.Logic
         public void HighlightNoteRows()
         {
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[analysisPackage.Workbook.Worksheets.Count]; //get last sheet, for last file. 
-            int i = 2; //Skip header row.
+            int i = FROZEN_ROWS + 1; //Skip header row.
             string header = "";
             while(header != "end_of_file")
             {
@@ -191,7 +193,7 @@ namespace Midi_Analyzer.Logic
             //Initialize values for sheet traversal.
             string header = "";
             int workIndex = 2;
-            int treatedIndex = 2;
+            int treatedIndex = FROZEN_ROWS + 1;
 
             while (header != "end_of_file")
             {
@@ -230,7 +232,7 @@ namespace Midi_Analyzer.Logic
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[analysisPackage.Workbook.Worksheets.Count];
 
             string header = "";
-            int i = 2;  //Skip the header.
+            int i = FROZEN_ROWS + 1;  //Skip the header.
             while (header != "end_of_file")
             {
                 header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
@@ -262,7 +264,7 @@ namespace Midi_Analyzer.Logic
             //get the specified worksheet from the package and initialize traversal variables.
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[workSheetIndex];
             string header = "";
-            int index = 1;
+            int index = FROZEN_ROWS + 1;
             int last_note_played = -1;      //Set the last note played as -1, meaning we're starting the analysis.
 
             while (header != "end_of_file")
@@ -346,7 +348,7 @@ namespace Midi_Analyzer.Logic
 
             //Create sheet traversal variables.
             string header = "";
-            int index = 1;
+            int index = FROZEN_ROWS + 1;
             while (header != "end_of_file")
             {
                 header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
@@ -481,20 +483,21 @@ namespace Midi_Analyzer.Logic
         /// <param name="sheet">Specifies the sheet in which to write the header to.</param>
         public void WriteHeader(ExcelWorksheet sheet)
         {
-            sheet.Cells[1, 1].Value = "Track Number";
-            sheet.Cells[1, 2].Value = "Midi pulses";
-            sheet.Cells[1, 3].Value = "Timestamp";
-            sheet.Cells[1, 4].Value = "Header";
-            sheet.Cells[1, 5].Value = "Channel";
-            sheet.Cells[1, 6].Value = "Midi Note";
-            sheet.Cells[1, 7].Value = "Letter Note";
-            sheet.Cells[1, 8].Value = "Velocity";
-            sheet.Cells[1, 9].Value = "IOI (pulses)";
-            sheet.Cells[1, 10].Value = "IOI (Milliseconds)";
-            sheet.Cells[1, 11].Value = "Include? (Y/N)";
-            sheet.Cells[1, 12].Value = "Line Number";
-            sheet.Cells[1, 13].Value = "Duration";
-            sheet.Cells[1, 14].Value = "Articulation";
+            sheet.View.FreezePanes(FROZEN_ROWS + 1, 14 + 1);
+            sheet.Cells[FROZEN_ROWS, 1].Value = "Track Number";
+            sheet.Cells[FROZEN_ROWS, 2].Value = "Midi pulses";
+            sheet.Cells[FROZEN_ROWS, 3].Value = "Timestamp";
+            sheet.Cells[FROZEN_ROWS, 4].Value = "Header";
+            sheet.Cells[FROZEN_ROWS, 5].Value = "Channel";
+            sheet.Cells[FROZEN_ROWS, 6].Value = "Midi Note";
+            sheet.Cells[FROZEN_ROWS, 7].Value = "Letter Note";
+            sheet.Cells[FROZEN_ROWS, 8].Value = "Velocity";
+            sheet.Cells[FROZEN_ROWS, 9].Value = "IOI (pulses)";
+            sheet.Cells[FROZEN_ROWS, 10].Value = "IOI (Milliseconds)";
+            sheet.Cells[FROZEN_ROWS, 11].Value = "Include? (Y/N)";
+            sheet.Cells[FROZEN_ROWS, 12].Value = "Line Number";
+            sheet.Cells[FROZEN_ROWS, 13].Value = "Duration";
+            sheet.Cells[FROZEN_ROWS, 14].Value = "Articulation";
         }
 
         /// <summary>
@@ -604,7 +607,7 @@ namespace Midi_Analyzer.Logic
                 _off_time = 0;
                 _checked = false;
             }
-            
+
             public int Row
             {
                 get { return _row; }
@@ -658,7 +661,7 @@ namespace Midi_Analyzer.Logic
                 string header = "";
                 int last_note_played = -1;
                 //Console.WriteLine("SIZE OF USED RANGE: " + (usedRange.Rows.Count + 1).ToString());
-                int i = 1;
+                int i = FROZEN_ROWS + 1;
                 while(header != "end_of_file")
                 {
                     header = workSheet.Cells[i, 3].Text.Trim().ToLower();

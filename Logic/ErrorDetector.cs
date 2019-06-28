@@ -1,10 +1,6 @@
 ﻿using OfficeOpenXml;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Midi_Analyzer.Logic
 {
@@ -108,7 +104,7 @@ namespace Midi_Analyzer.Logic
                 }
                 midiIndex--;
             }
-            return true; //No errors found (This technically should not be possible.
+            return true; //No errors found 
         }
 
         /// <summary>
@@ -131,7 +127,6 @@ namespace Midi_Analyzer.Logic
             {
                 //Still in development.
             }
-
             return false;
         }
 
@@ -157,7 +152,6 @@ namespace Midi_Analyzer.Logic
                 }
                 index++;
             }
-
             //Return the list.
             return columnList;
         }

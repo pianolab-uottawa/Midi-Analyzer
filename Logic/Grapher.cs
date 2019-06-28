@@ -11,7 +11,7 @@ namespace Midi_Analyzer.Logic
     /// </summary>
     class Grapher
     {
-
+        private readonly int FROZEN_ROWS = 10;
         private IDictionary<int, string> columnAssignment;
         private string imagePath;
         private ExcelPackage analysisPackage;
@@ -27,7 +27,6 @@ namespace Midi_Analyzer.Logic
             this.excerptPackage = excerptPackage;
             this.numSamples = numSamples;
         }
-
 
         /// <summary>
         /// This method will compare each individual IOI of each sample with the model's IOI for their note. The data points on the graph
@@ -60,8 +59,8 @@ namespace Midi_Analyzer.Logic
 
                 //Set variables and indexes for sheet traversal.
                 string header = "";
-                int treatedIndex = 2;   //Skip header
-                int graphIndex = 2;     //Skip header
+                int treatedIndex = FROZEN_ROWS + 1;   //Skip header
+                int graphIndex = 2;                   //Skip header
                 int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
                 if (i == seriesIndex) //This is the model. We don't calculate deviation here.
@@ -165,8 +164,8 @@ namespace Midi_Analyzer.Logic
                 double meanIOI = CalculateMeanIOI(treatedSheet);
                 graphSheet.Cells[1, columnIndex + 5].Value = meanIOI;
                 string header = "";
-                int treatedIndex = 2;   //Skip header
-                int graphIndex = 2;     //Skip header
+                int treatedIndex = FROZEN_ROWS + 1;   //Skip header
+                int graphIndex = 2;                   //Skip header
                 int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
                 while (header != "end_of_file")
@@ -235,7 +234,7 @@ namespace Midi_Analyzer.Logic
                 double meanVel = CalculateMeanVelocity(treatedSheet);
                 graphSheet.Cells[1, columnIndex + 4].Value = meanVel;
                 string header = "";
-                int treatedIndex = 2;   //Skip header
+                int treatedIndex = FROZEN_ROWS + 1;   //Skip header
                 int graphIndex = 2;     //Skip header
                 int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
@@ -306,7 +305,7 @@ namespace Midi_Analyzer.Logic
 
                 //Set variables and indexes for sheet traversal.
                 string header = "";
-                int treatedIndex = 2;   //Skip header
+                int treatedIndex = FROZEN_ROWS + 1;   //Skip header
                 int graphIndex = 2;     //Skip header
                 int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
@@ -409,7 +408,7 @@ namespace Midi_Analyzer.Logic
 
                 //Set variables and indexes for sheet traversal.
                 string header = "";
-                int treatedIndex = 2;   //Skip header
+                int treatedIndex = FROZEN_ROWS + 1;   //Skip header
                 int graphIndex = 2;     //Skip header
                 int lastValidRow = 2;   //This index is used to only take into account the range of valid notes (prevents ending N's being included).
 
