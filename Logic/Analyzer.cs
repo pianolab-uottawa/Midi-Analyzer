@@ -1,12 +1,10 @@
 ﻿using OfficeOpenXml;
-using OfficeOpenXml.Drawing.Chart;
 using System;
 using System.Diagnostics;
 using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace Midi_Analyzer.Logic
