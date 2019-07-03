@@ -213,7 +213,10 @@ namespace Midi_Analyzer.Logic
             ExcelWorksheet treatedSheet = null;
             ExcelWorksheet graphSheet = analysisPackage.Workbook.Worksheets.Add("Dynamics");
             ExcelWorksheet excerptSheet = excerptPackage.Workbook.Worksheets[1];
-            ExcelChart graph = graphSheet.Drawings.AddChart("scatterChart", eChartType.XYScatterLines);
+            ExcelChart graph = graphSheet.Drawings.AddChart("MeanVelocityGraph", eChartType.XYScatterLines);
+
+            //1A. This parralel graph will graph the real velocities. This was at Melinas request.
+            ExcelChart graph2 = graphSheet.Drawings.AddChart("VelocityGraph", eChartType.XYScatterLines);
 
             //2. Initalize indexes.
             int columnIndex = 1;
@@ -223,7 +226,7 @@ namespace Midi_Analyzer.Logic
             string[] sheetNames = CreateSeriesNames(analysisPackage, numSamples);
             Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
 
-            //Get series from each sample's treated sheet.
+            //4. Get series from each sample's treated sheet.
             for (int i = 1; i <= numSamples; i++)
             {
                 //Get corresponding sheet and write header. 
@@ -250,6 +253,9 @@ namespace Midi_Analyzer.Logic
                         double velDeviation = CalculateMeanVelDeviation(meanVel, (double)(treatedSheet.Cells[treatedIndex, 8].Value));  //Calculate velocity deviation
                         graphSheet.Cells[graphIndex, columnIndex + 3].Value = Math.Round(velDeviation, 2);                              //Assign deviation into sheet
                         graphSheet.Cells[graphIndex, columnIndex + 4].Value = excerptSheet.Cells[lineNumber + 1, 6].Value;              //Write spacing from excerpt.
+
+                        //4A. Thisgraph will show the real velocities.
+                        graphSheet.Cells[graphIndex, columnIndex + 5].Value = treatedSheet.Cells[treatedIndex, 8].Value;
                         lastValidRow = graphIndex;
                         graphIndex++;
                     }
@@ -262,15 +268,27 @@ namespace Midi_Analyzer.Logic
                 }
                 //Create and add series to the graph.
                 CreateAndAddSeries(graphSheet, graph, columnIndex, lastValidRow, markerIndex);
-                markerIndex++;
                 graph.Series[i - 1].Header = sheetNames[i - 1];
-                columnIndex += 6;
+
+                //Add the velocity series to the non-mean graph.
+                CreateAndAddVelSeries(graphSheet, graph2, columnIndex, lastValidRow, markerIndex);
+                graph2.Series[i - 1].Header = sheetNames[i - 1];
+                
+                markerIndex++;
+                columnIndex += 7;
             }
             //Finalize graph and save the package.
             string title = "Dynamics - " + excerptPackage.File.Name.Split('.')[0];
             string yLabel = "Deviation of velocity (%)";
             SetGraphProperties(graph, title, columnIndex, yLabel);
             InsertImageIntoSheet(graphSheet, 23, columnIndex + 1);
+
+            //Finalize vel graph
+            string title2 = "Dynamics (Raw) - " + excerptPackage.File.Name.Split('.')[0];
+            string yLabel2 = "Velocity (in midi units)";
+            SetVelGraphProperties(graph2, title2, columnIndex, yLabel2);
+            InsertImageIntoSheet(graphSheet, 50, columnIndex + 1);
+
             analysisPackage.Save();
         }
 
@@ -480,6 +498,47 @@ namespace Midi_Analyzer.Logic
             var series = graph.Series.Add(graphSheet.Cells[varRange], graphSheet.Cells[timeRange]);
             markerIndex = SelectMarker(markerIndex, markerTypes.Length);
             ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+        }
+
+        /// <summary>
+        /// This method creates a series and adds it to the supplied graph. It is intended to be used with the modifications for velocity.
+        /// </summary>
+        /// <param name="graphSheet"></param>
+        /// <param name="graph"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="lastValidRow"></param>
+        /// <param name="markerIndex"></param>
+        public void CreateAndAddVelSeries(ExcelWorksheet graphSheet, ExcelChart graph, int columnIndex, int lastValidRow, int markerIndex)
+        {
+            Array markerTypes = Enum.GetValues(typeof(eMarkerStyle));
+            string lineNumColLetter = ConvertIndexToLetter(columnIndex + 4);
+            string varColLetter = ConvertIndexToLetter(columnIndex + 5);        //The velocity variable.
+            string varRange = varColLetter + "2:" + varColLetter + lastValidRow;
+            string timeRange = lineNumColLetter + "2:" + lineNumColLetter + lastValidRow;
+            var series = graph.Series.Add(graphSheet.Cells[varRange], graphSheet.Cells[timeRange]);
+            markerIndex = SelectMarker(markerIndex, markerTypes.Length);
+            ((ExcelScatterChartSerie)series).Marker = (eMarkerStyle)markerTypes.GetValue(markerIndex);
+        }
+
+        /// <summary>
+        /// Sets all the graph properties for the velocity graph.
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <param name="title"></param>
+        /// <param name="column"></param>
+        /// <param name="yLabel"></param>
+        public void SetVelGraphProperties(ExcelChart graph, string title, int column, string yLabel)
+        {
+            graph.Title.Text = title;
+            graph.SetSize(994, 410);
+            graph.SetPosition(29, 0, column, 0);
+            graph.Legend.Position = eLegendPosition.Top;
+            graph.XAxis.Fill.Style = eFillStyle.NoFill;
+            graph.XAxis.TickLabelPosition = eTickLabelPosition.None;
+            graph.XAxis.MajorTickMark = eAxisTickMark.None;
+            graph.XAxis.MinorTickMark = eAxisTickMark.None;
+            graph.YAxis.Title.Text = yLabel;
+            graph.YAxis.Title.Font.Size = 10;
         }
 
         /// <summary>
@@ -712,7 +771,7 @@ namespace Midi_Analyzer.Logic
         {
             sheet.Column(col).Width = 4;               //This is to line up the image with the graph as much as possible.
             Image image = Image.FromFile(imagePath);
-            var scorePicture = sheet.Drawings.AddPicture("Score", image);
+            var scorePicture = sheet.Drawings.AddPicture("Score " + row, image);
             scorePicture.SetPosition(row, 0, col, 0);
             //int horizontalCoord = scorePicture.
             scorePicture.SetSize(933, 71);

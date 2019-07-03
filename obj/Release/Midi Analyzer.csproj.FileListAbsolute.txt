@@ -21,3 +21,14 @@ C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Syste
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csproj.CopyComplete
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.dll
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Newtonsoft.Json.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Newtonsoft.Json.xml
