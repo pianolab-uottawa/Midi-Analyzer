@@ -70,7 +70,10 @@
                     </Canvas>
                 </TabItem>
                 <TabItem x:Name="results" Header="Results">
-                    <Label Content="Working on it too..."></Label>
+                    <Canvas>
+                        <TextBlock HorizontalAlignment="Center" Height="52" TextWrapping="Wrap" Text="The files have been analyzed successfully! You can open the excel file by pressing the button below." FontSize="16" Canvas.Left="194" Canvas.Top="26" Width="547" TextAlignment="Center"/>
+                        <Button Content="Open File" Height="100" Width="243" Canvas.Left="323" Canvas.Top="123" Click="OpenAnalyzedFile"/>
+                    </Canvas>
                 </TabItem>
             </TabControl>
         </Grid>
