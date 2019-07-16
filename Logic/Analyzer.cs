@@ -134,6 +134,7 @@ namespace Midi_Analyzer.Logic
             {
                 CreateIOIRowEPP(j);         //Create an IOI row in sheet j.
                 CreateArticulationRow(j);   //Create an articualtion row in sheet j.
+                CreateDurationRow(j);       //Creates a note duration row in sheet j.
             }
 
             //Create graphs and save package changes.
@@ -295,7 +296,7 @@ namespace Midi_Analyzer.Logic
                             }
                             else
                             {   
-                                //Reset the count as if it were the first note being played. This is to prevent the excluded note from affect the calculation.
+                                //Reset the count as if it were the first note being played. This is to prevent the excluded note from affecting the calculation.
                                 keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
                                 keys[current_note].Row = index;
                                 last_note_played = current_note;
@@ -306,6 +307,75 @@ namespace Midi_Analyzer.Logic
                             keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
                             keys[current_note].Row = index;
                             last_note_played = current_note;
+                        }
+                    }
+                }
+                index++;
+            }
+            //Save the package.
+            analysisPackage.Save();
+        }
+
+        /// <summary>
+        /// Creates a row representing the note duration. 
+        /// </summary>
+        /// <param name="workSheetIndex"></param>
+        public void CreateDurationRow(int workSheetIndex)
+        {
+            //Initialize an array of notes, used to keep track of when notes were played.
+            Node[] keys = new Node[128 + 1];
+            for (int i = 1; i < 128 + 1; i++)
+            {
+                keys[i] = new Node();   //Each index in the array represents a note (hence the array size being 128 (129 - 1).
+            }
+
+            //get the specified worksheet from the package and initialize traversal variables.
+            ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[workSheetIndex];
+            string header = "";
+            int index = FROZEN_ROWS + 1;
+            int last_note_played = -1;      //Set the last note played as -1, meaning we're starting the analysis.
+            int lastLineNumber = GetLastLineNumber();
+            int currentLineNumber = -1;
+            string lastNoteValue = "";
+
+            //Queue of notes played
+            List<Node> queue = new List<Node>();
+
+            while (header != "end_of_file")
+            {
+                header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
+                if (treatedSheet.Cells[index, 1].Text != "0")       //Make sure to skip track 0.
+                {
+                    //If the note is on an the velocity is not 0 (not a note_off).
+                    if (header == "note_on_c" && treatedSheet.Cells[index, 8].Text != "0")
+                    {
+                        int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);      //Get the current note number.
+                        if (treatedSheet.Cells[index, 11].Text.Trim().ToLower() == "y")    //Note is included.
+                        {
+                            //Start time and row for next note saved
+                            keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                            keys[current_note].Row = index;
+                            keys[current_note].Checked = false;
+                            last_note_played = current_note; //The current note becomes the last note.
+                            lastNoteValue = treatedSheet.Cells[index, 7].Text.Trim();
+                            queue.Add(new Node(index, current_note));   //Add it to the queue.
+                        }
+                    }
+                    else if(header == "note_off_c" || treatedSheet.Cells[index, 8].Text == "0") //Calculate the previous note's duration.
+                    {
+                        int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                        int qIndex = queue.FindIndex(x => x.Note == current_note);
+                        if (qIndex != -1)       //Matches the previous note_on.
+                        {
+                            Node result = queue[qIndex];
+                            double endTime = Double.Parse(treatedSheet.Cells[index, 2].Text); //End time of the last note.
+                            double noteDuration = endTime - Double.Parse(treatedSheet.Cells[result.Row, 2].Text.Trim());
+                            double durationMilli = CalculateMilliseconds(noteDuration);
+                            string durationString = ConvertMilliToString(durationMilli);
+                            treatedSheet.Cells[result.Row, 15].Value = noteDuration;
+                            treatedSheet.Cells[result.Row, 16].Value = durationMilli;
+                            keys[last_note_played].Checked = true; //MUDAMUDAMUDAMUDAMUDAMUDA
+                            queue.RemoveAt(qIndex);
                         }
                     }
                 }
@@ -370,6 +440,30 @@ namespace Midi_Analyzer.Logic
             }
             //Return the list of all notes played.
             return notesPlayed;
+        }
+
+        /// <summary>
+        /// Gets the last line number from the excerpt package.
+        /// POSSIBLE EDGE CASE!!!! If the user has excluded the last note in the midi sheet, this method fails.
+        /// </summary>
+        public int GetLastLineNumber()
+        {
+            ExcelWorksheet eSheet = excerptPackage.Workbook.Worksheets[1];
+            int lastRow = eSheet.Dimension.End.Row;
+            int lastLineNumber = -1;
+            while (lastRow > 1)
+            {
+                if (eSheet.Cells[lastRow, 1].Value != null && eSheet.Cells[lastRow, 1].Text.Trim() != "" && eSheet.Cells[lastRow, 1].Text.Trim().ToLower() != "end")
+                {
+                    lastLineNumber = Int32.Parse(eSheet.Cells[lastRow, 1].Text.Trim());
+                    break;
+                }
+                else
+                {
+                    lastRow--;
+                }
+            }
+            return lastLineNumber;
         }
 
         /// <summary>
@@ -475,6 +569,7 @@ namespace Midi_Analyzer.Logic
             grapher.CreateIOIGraph();
             grapher.CreateVelocityGraph();
             grapher.CreateArticulationGraph();
+            grapher.CreateNoteDurationGraph();
         }
 
         /// <summary>
@@ -498,6 +593,8 @@ namespace Midi_Analyzer.Logic
             sheet.Cells[FROZEN_ROWS, 12].Value = "Line Number";
             sheet.Cells[FROZEN_ROWS, 13].Value = "Duration";
             sheet.Cells[FROZEN_ROWS, 14].Value = "Articulation";
+            sheet.Cells[FROZEN_ROWS, 15].Value = "Note duration (midi)";
+            sheet.Cells[FROZEN_ROWS, 16].Value = "Note duration (ms)";
         }
 
         /// <summary>
@@ -566,6 +663,17 @@ namespace Midi_Analyzer.Logic
             {
                 _row = row;
                 _on_time = on_time;
+            }
+
+            /// <summary>
+            /// Generates a node using only the row and note information.
+            /// </summary>
+            /// <param name="row">The row number at which the on time was detected.</param>
+            /// <param name="note">The note number in midi format.</param>
+            public Node(int row, int note)
+            {
+                _row = row;
+                _note = note;
             }
 
             /// <summary>
