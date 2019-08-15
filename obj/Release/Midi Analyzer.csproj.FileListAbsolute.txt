@@ -1,23 +1,34 @@
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\View\App.g.cs
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.exe.config
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.exe
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Newtonsoft.Json.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.dll
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.Shell.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Microsoft.WindowsAPICodePack.ShellExtensions.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Newtonsoft.Json.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.xml
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\View\MainWindow.g.cs
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\View\App.g.cs
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer_Content.g.cs
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer_MarkupCompile.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer_MarkupCompile.lref
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.pdb
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\View\MainWindow.baml
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.g.resources
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi_Analyzer.Properties.Resources.resources
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csproj.GenerateResource.cache
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csproj.CoreCompileInputs.cache
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.pdb
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer_Content.g.cs
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.exe.config
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\Midi Analyzer.exe
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csprojAssemblyReference.cache
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.exe
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.dll
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.dll
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\CsvHelper.xml
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\System.ValueTuple.xml
 C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csproj.CopyComplete
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.dll
-C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\bin\Release\EPPlus.xml
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.exe
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.pdb
+C:\Users\Rawaz\Documents\Piano_Lab\Midi Analyzer\Midi Analyzer\obj\Release\Midi Analyzer.csprojAssemblyReference.cache

@@ -12,6 +12,8 @@ namespace Midi_Analyzer.Logic
     class Analyzer
     {
 
+        private readonly int FROZEN_ROWS = 10;
+
         private double tempo = -1;
         private double division = -1;
         private JObject notes;
@@ -113,7 +115,7 @@ namespace Midi_Analyzer.Logic
         }
 
         /// <summary>
-        /// Runs the second part of the csv file analysis. This inludes creating an IOI and articulation row, as well as graph creation.
+        /// Runs the second part of the csv file analysis. This includes creating an IOI and articulation row, as well as graph creation.
         /// </summary>
         public void AnalyzeCSVFilesStep2()
         {
@@ -132,6 +134,7 @@ namespace Midi_Analyzer.Logic
             {
                 CreateIOIRowEPP(j);         //Create an IOI row in sheet j.
                 CreateArticulationRow(j);   //Create an articualtion row in sheet j.
+                CreateDurationRow(j);       //Creates a note duration row in sheet j.
             }
 
             //Create graphs and save package changes.
@@ -156,7 +159,7 @@ namespace Midi_Analyzer.Logic
         public void HighlightNoteRows()
         {
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[analysisPackage.Workbook.Worksheets.Count]; //get last sheet, for last file. 
-            int i = 2; //Skip header row.
+            int i = FROZEN_ROWS + 1; //Skip header row.
             string header = "";
             while(header != "end_of_file")
             {
@@ -191,7 +194,7 @@ namespace Midi_Analyzer.Logic
             //Initialize values for sheet traversal.
             string header = "";
             int workIndex = 2;
-            int treatedIndex = 2;
+            int treatedIndex = FROZEN_ROWS + 1;
 
             while (header != "end_of_file")
             {
@@ -230,7 +233,7 @@ namespace Midi_Analyzer.Logic
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[analysisPackage.Workbook.Worksheets.Count];
 
             string header = "";
-            int i = 2;  //Skip the header.
+            int i = FROZEN_ROWS + 1;  //Skip the header.
             while (header != "end_of_file")
             {
                 header = treatedSheet.Cells[i, 4].Text.Trim().ToLower();
@@ -262,7 +265,7 @@ namespace Midi_Analyzer.Logic
             //get the specified worksheet from the package and initialize traversal variables.
             ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[workSheetIndex];
             string header = "";
-            int index = 1;
+            int index = FROZEN_ROWS + 1;
             int last_note_played = -1;      //Set the last note played as -1, meaning we're starting the analysis.
 
             while (header != "end_of_file")
@@ -293,7 +296,7 @@ namespace Midi_Analyzer.Logic
                             }
                             else
                             {   
-                                //Reset the count as if it were the first note being played. This is to prevent the excluded note from affect the calculation.
+                                //Reset the count as if it were the first note being played. This is to prevent the excluded note from affecting the calculation.
                                 keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
                                 keys[current_note].Row = index;
                                 last_note_played = current_note;
@@ -304,6 +307,75 @@ namespace Midi_Analyzer.Logic
                             keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
                             keys[current_note].Row = index;
                             last_note_played = current_note;
+                        }
+                    }
+                }
+                index++;
+            }
+            //Save the package.
+            analysisPackage.Save();
+        }
+
+        /// <summary>
+        /// Creates a row representing the note duration. 
+        /// </summary>
+        /// <param name="workSheetIndex"></param>
+        public void CreateDurationRow(int workSheetIndex)
+        {
+            //Initialize an array of notes, used to keep track of when notes were played.
+            Node[] keys = new Node[128 + 1];
+            for (int i = 1; i < 128 + 1; i++)
+            {
+                keys[i] = new Node();   //Each index in the array represents a note (hence the array size being 128 (129 - 1).
+            }
+
+            //get the specified worksheet from the package and initialize traversal variables.
+            ExcelWorksheet treatedSheet = analysisPackage.Workbook.Worksheets[workSheetIndex];
+            string header = "";
+            int index = FROZEN_ROWS + 1;
+            int last_note_played = -1;      //Set the last note played as -1, meaning we're starting the analysis.
+            int lastLineNumber = GetLastLineNumber();
+            int currentLineNumber = -1;
+            string lastNoteValue = "";
+
+            //Queue of notes played
+            List<Node> queue = new List<Node>();
+
+            while (header != "end_of_file")
+            {
+                header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
+                if (treatedSheet.Cells[index, 1].Text != "0")       //Make sure to skip track 0.
+                {
+                    //If the note is on an the velocity is not 0 (not a note_off).
+                    if (header == "note_on_c" && treatedSheet.Cells[index, 8].Text != "0")
+                    {
+                        int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);      //Get the current note number.
+                        if (treatedSheet.Cells[index, 11].Text.Trim().ToLower() == "y")    //Note is included.
+                        {
+                            //Start time and row for next note saved
+                            keys[current_note].On_time = Double.Parse(treatedSheet.Cells[index, 2].Text);
+                            keys[current_note].Row = index;
+                            keys[current_note].Checked = false;
+                            last_note_played = current_note; //The current note becomes the last note.
+                            lastNoteValue = treatedSheet.Cells[index, 7].Text.Trim();
+                            queue.Add(new Node(index, current_note));   //Add it to the queue.
+                        }
+                    }
+                    else if(header == "note_off_c" || treatedSheet.Cells[index, 8].Text == "0") //Calculate the previous note's duration.
+                    {
+                        int current_note = Int32.Parse(treatedSheet.Cells[index, 6].Text);
+                        int qIndex = queue.FindIndex(x => x.Note == current_note);
+                        if (qIndex != -1)       //Matches the previous note_on.
+                        {
+                            Node result = queue[qIndex];
+                            double endTime = Double.Parse(treatedSheet.Cells[index, 2].Text); //End time of the last note.
+                            double noteDuration = endTime - Double.Parse(treatedSheet.Cells[result.Row, 2].Text.Trim());
+                            double durationMilli = CalculateMilliseconds(noteDuration);
+                            string durationString = ConvertMilliToString(durationMilli);
+                            treatedSheet.Cells[result.Row, 15].Value = noteDuration;
+                            treatedSheet.Cells[result.Row, 16].Value = durationMilli;
+                            keys[last_note_played].Checked = true; //MUDAMUDAMUDAMUDAMUDAMUDA
+                            queue.RemoveAt(qIndex);
                         }
                     }
                 }
@@ -346,7 +418,7 @@ namespace Midi_Analyzer.Logic
 
             //Create sheet traversal variables.
             string header = "";
-            int index = 1;
+            int index = FROZEN_ROWS + 1;
             while (header != "end_of_file")
             {
                 header = treatedSheet.Cells[index, 4].Text.Trim().ToLower();
@@ -368,6 +440,30 @@ namespace Midi_Analyzer.Logic
             }
             //Return the list of all notes played.
             return notesPlayed;
+        }
+
+        /// <summary>
+        /// Gets the last line number from the excerpt package.
+        /// POSSIBLE EDGE CASE!!!! If the user has excluded the last note in the midi sheet, this method fails.
+        /// </summary>
+        public int GetLastLineNumber()
+        {
+            ExcelWorksheet eSheet = excerptPackage.Workbook.Worksheets[1];
+            int lastRow = eSheet.Dimension.End.Row;
+            int lastLineNumber = -1;
+            while (lastRow > 1)
+            {
+                if (eSheet.Cells[lastRow, 1].Value != null && eSheet.Cells[lastRow, 1].Text.Trim() != "" && eSheet.Cells[lastRow, 1].Text.Trim().ToLower() != "end")
+                {
+                    lastLineNumber = Int32.Parse(eSheet.Cells[lastRow, 1].Text.Trim());
+                    break;
+                }
+                else
+                {
+                    lastRow--;
+                }
+            }
+            return lastLineNumber;
         }
 
         /// <summary>
@@ -473,6 +569,7 @@ namespace Midi_Analyzer.Logic
             grapher.CreateIOIGraph();
             grapher.CreateVelocityGraph();
             grapher.CreateArticulationGraph();
+            grapher.CreateNoteDurationGraph();
         }
 
         /// <summary>
@@ -481,20 +578,23 @@ namespace Midi_Analyzer.Logic
         /// <param name="sheet">Specifies the sheet in which to write the header to.</param>
         public void WriteHeader(ExcelWorksheet sheet)
         {
-            sheet.Cells[1, 1].Value = "Track Number";
-            sheet.Cells[1, 2].Value = "Midi pulses";
-            sheet.Cells[1, 3].Value = "Timestamp";
-            sheet.Cells[1, 4].Value = "Header";
-            sheet.Cells[1, 5].Value = "Channel";
-            sheet.Cells[1, 6].Value = "Midi Note";
-            sheet.Cells[1, 7].Value = "Letter Note";
-            sheet.Cells[1, 8].Value = "Velocity";
-            sheet.Cells[1, 9].Value = "IOI (pulses)";
-            sheet.Cells[1, 10].Value = "IOI (Milliseconds)";
-            sheet.Cells[1, 11].Value = "Include? (Y/N)";
-            sheet.Cells[1, 12].Value = "Line Number";
-            sheet.Cells[1, 13].Value = "Duration";
-            sheet.Cells[1, 14].Value = "Articulation";
+            sheet.View.FreezePanes(FROZEN_ROWS + 1, 14 + 1);
+            sheet.Cells[FROZEN_ROWS, 1].Value = "Track Number";
+            sheet.Cells[FROZEN_ROWS, 2].Value = "Midi pulses";
+            sheet.Cells[FROZEN_ROWS, 3].Value = "Timestamp";
+            sheet.Cells[FROZEN_ROWS, 4].Value = "Header";
+            sheet.Cells[FROZEN_ROWS, 5].Value = "Channel";
+            sheet.Cells[FROZEN_ROWS, 6].Value = "Midi Note";
+            sheet.Cells[FROZEN_ROWS, 7].Value = "Letter Note";
+            sheet.Cells[FROZEN_ROWS, 8].Value = "Velocity";
+            sheet.Cells[FROZEN_ROWS, 9].Value = "IOI (pulses)";
+            sheet.Cells[FROZEN_ROWS, 10].Value = "IOI (Milliseconds)";
+            sheet.Cells[FROZEN_ROWS, 11].Value = "Include? (Y/N)";
+            sheet.Cells[FROZEN_ROWS, 12].Value = "Line Number";
+            sheet.Cells[FROZEN_ROWS, 13].Value = "Duration";
+            sheet.Cells[FROZEN_ROWS, 14].Value = "Articulation";
+            sheet.Cells[FROZEN_ROWS, 15].Value = "Note duration (midi)";
+            sheet.Cells[FROZEN_ROWS, 16].Value = "Note duration (ms)";
         }
 
         /// <summary>
@@ -566,6 +666,17 @@ namespace Midi_Analyzer.Logic
             }
 
             /// <summary>
+            /// Generates a node using only the row and note information.
+            /// </summary>
+            /// <param name="row">The row number at which the on time was detected.</param>
+            /// <param name="note">The note number in midi format.</param>
+            public Node(int row, int note)
+            {
+                _row = row;
+                _note = note;
+            }
+
+            /// <summary>
             /// Generates a node using the row, on_time and note information.
             /// </summary>
             /// <param name="row">The row number at which the on_time was detected.</param>
@@ -604,7 +715,7 @@ namespace Midi_Analyzer.Logic
                 _off_time = 0;
                 _checked = false;
             }
-            
+
             public int Row
             {
                 get { return _row; }
@@ -658,7 +769,7 @@ namespace Midi_Analyzer.Logic
                 string header = "";
                 int last_note_played = -1;
                 //Console.WriteLine("SIZE OF USED RANGE: " + (usedRange.Rows.Count + 1).ToString());
-                int i = 1;
+                int i = FROZEN_ROWS + 1;
                 while(header != "end_of_file")
                 {
                     header = workSheet.Cells[i, 3].Text.Trim().ToLower();

@@ -2,14 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Midi_Analyzer.Logic
 {
     class ErrorDetector
     {
+
+        private readonly int FROZEN_ROWS = 10;
 
         /// <summary>
         /// A basic error detection algorithm. It checks if all the notes in the playthrough are correct. Should an error be detected,
@@ -46,11 +45,11 @@ namespace Midi_Analyzer.Logic
         {
             string header = "";
             int excerptIndex = 2;
-            int midiIndex = 2;
+            int midiIndex = FROZEN_ROWS + 1;
             while (header != "end_of_file")
             {
                 header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
-                if(header == "note_on_c")
+                if(header == "note_on_c" && int.Parse(midiSheet.Cells[midiIndex, 8].Text.Trim()) != 0)
                 {
                     if(excerptSheet.Cells[excerptIndex, 1].Text.Trim().ToLower() == "end" || excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower() == "end"){
                         excerptIndex = 2; //Resets the excerpt, in case the person has multiple attempts on the same track.
@@ -64,9 +63,13 @@ namespace Midi_Analyzer.Logic
                     }
                     else
                     {
-                        midiSheet.Cells[midiIndex, 13].Value = "ERROR";
+                        midiSheet.Cells[midiIndex, 14].Value = "ERROR";
                         return DetectGoodPlaythroughReversed(midiSheet, excerptSheet); //error detected
                     }
+                }
+                else if(header == "note_on_c" && int.Parse(midiSheet.Cells[midiIndex, 8].Text.Trim()) == 0)
+                {
+                    Console.WriteLine("NOTE_ON VELOCITY 0 DETECTED AT: " + midiIndex);
                 }
                 midiIndex++;
             }
@@ -87,28 +90,33 @@ namespace Midi_Analyzer.Logic
             while (header != "start_track")
             {
                 header = midiSheet.Cells[midiIndex, 4].Text.Trim().ToLower();
-                if (header == "note_on_c")
+                if (header == "note_on_c" && int.Parse(midiSheet.Cells[midiIndex, 8].Text.Trim()) != 0)
                 {
                     if (excerptSheet.Cells[excerptIndex, 1].Text.Trim().ToLower() == "end" || excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower() == "end")
                     {
-                        excerptIndex = excerptSheet.Dimension.End.Row; //Resets the excerpt, in case the person has multiple attempts on the same track.
+                        //excerptIndex = excerptSheet.Dimension.End.Row; //Resets the excerpt, in case the person has multiple attempts on the same track.
+                        excerptIndex--;
                     }
-                    if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
+                    else if (midiSheet.Cells[midiIndex, 7].Text.Trim().ToLower() == excerptSheet.Cells[excerptIndex, 2].Text.Trim().ToLower())
                     {
                         midiSheet.Cells[midiIndex, 11].Value = excerptSheet.Cells[excerptIndex, 5].Value;
                         midiSheet.Cells[midiIndex, 12].Value = excerptSheet.Cells[excerptIndex, 1].Value;
                         midiSheet.Cells[midiIndex, 13].Value = excerptSheet.Cells[excerptIndex, 4].Value;
                         excerptIndex--;
+                        midiIndex--;
                     }
                     else
                     {
-                        midiSheet.Cells[midiIndex, 13].Value = "ERROR";
+                        midiSheet.Cells[midiIndex, 14].Value = "ERROR";
                         return false; //error detected
                     }
                 }
-                midiIndex--;
+                else
+                {
+                    midiIndex--;
+                }
             }
-            return true; //No errors found (This technically should not be possible.
+            return true; //No errors found 
         }
 
         /// <summary>
@@ -131,7 +139,6 @@ namespace Midi_Analyzer.Logic
             {
                 //Still in development.
             }
-
             return false;
         }
 
@@ -157,7 +164,6 @@ namespace Midi_Analyzer.Logic
                 }
                 index++;
             }
-
             //Return the list.
             return columnList;
         }

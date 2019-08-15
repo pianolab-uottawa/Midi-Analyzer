@@ -22,6 +22,8 @@ namespace Midi_Analyzer
         {
             InitializeComponent();
             sourceFileType = "MIDI";
+            this.errorDetection.IsEnabled = false;
+            this.results.IsEnabled = false;
         }
 
         /// <summary>
@@ -67,6 +69,8 @@ namespace Midi_Analyzer
             if (result == true && dlg.FileNames.Length != 0)
             {
                 ListBox sourcePathBox = (ListBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("sourcePath");
+                //Clear the existing items from the box.
+                sourcePathBox.Items.Clear();
                 foreach(string file in dlg.FileNames)
                 {
                     sourcePathBox.Items.Add(file);
@@ -173,6 +177,22 @@ namespace Midi_Analyzer
         }
 
         /// <summary>
+        /// Opens a dialog to select a folder using windows forms.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BrowseForFolderForms(object sender, RoutedEventArgs e)
+        {
+            var dlg = new System.Windows.Forms.FolderBrowserDialog();
+            System.Windows.Forms.DialogResult result = dlg.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                TextBox path = (TextBox)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("destinationPath");
+                path.Text = dlg.SelectedPath;
+            }
+        }
+
+        /// <summary>
         /// Converts the source files into either their csv or midi counterparts. 
         /// </summary>
         /// <param name="sender"></param>
@@ -245,6 +265,8 @@ namespace Midi_Analyzer
 
             //Switch the focus to the next tab.
             TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
+            this.errorDetection.IsEnabled = true;
+            this.results.IsEnabled = false;     //You do this in case the person has rerun the tool without closing it.
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "errorDetection").Focus();
         }
 
@@ -270,6 +292,7 @@ namespace Midi_Analyzer
         private void GenerateGraphs(object sender, RoutedEventArgs e)
         {
             analyzer.AnalyzeCSVFilesStep2();
+            this.results.IsEnabled = true;
             TabControl tabControl = (TabControl)(((FrameworkElement)sender).Parent as FrameworkElement).FindName("tabController");
             tabControl.Items.OfType<TabItem>().SingleOrDefault(n => n.Name == "results").Focus();
         }
@@ -293,6 +316,19 @@ namespace Midi_Analyzer
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Opens the analyzed file worksheet.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OpenAnalyzedFile(object sender, RoutedEventArgs e)
+        {
+            TextBox destPath = this.destinationPath;
+            string file = destPath.Text + "//analyzedFile.xlsx";
+
+            Process.Start(@"" + file);
         }
     }
 }
