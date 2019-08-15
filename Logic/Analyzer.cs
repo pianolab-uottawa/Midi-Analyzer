@@ -115,7 +115,7 @@ namespace Midi_Analyzer.Logic
         }
 
         /// <summary>
-        /// Runs the second part of the csv file analysis. This inludes creating an IOI and articulation row, as well as graph creation.
+        /// Runs the second part of the csv file analysis. This includes creating an IOI and articulation row, as well as graph creation.
         /// </summary>
         public void AnalyzeCSVFilesStep2()
         {
